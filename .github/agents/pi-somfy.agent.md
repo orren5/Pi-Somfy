@@ -30,7 +30,7 @@ mymqtt.py             — MQTT client (paho-mqtt), Home Assistant discovery, pub
 myscheduler.py        — Sunset/sunrise scheduling (ephem), weekday/once events
 myalexa.py            — Amazon Alexa integration via UPnP emulation
 fauxmo.py             — Belkin Wemo UPnP device emulator for Echo discovery
-html/                 — Self-contained frontend (Bootstrap 3, jQuery 3.3.1, Leaflet)
+html/                 — Self-contained frontend (Bootstrap 5.3.3, jQuery 4.0.0, Bootstrap Icons, Leaflet)
   index.html          — Single-page web UI
   operateShutters.js  — Client-side logic
   operateShutters.css — Custom styles
@@ -97,7 +97,7 @@ Key parameters:
 
 ## Web Frontend Notes
 
-- Bootstrap 3.x with jQuery 3.3.1 — all files in `html/css/` and `html/js/`
+- Bootstrap 5.3.3 with jQuery 4.0.0, Bootstrap Icons 1.11.3 — all files in `html/css/` and `html/js/`
 - Leaflet.js for the location picker map (tiles would need to be cached/local for offline use)
 - All icons are PNG files in `html/` (up.png, down.png, stop.png, etc.)
 - The frontend communicates with the backend via REST calls to Flask endpoints
