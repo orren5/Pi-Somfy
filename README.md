@@ -324,6 +324,11 @@ This Library was ported from [Arduino sketch](https://github.com/Nickduino/Somfy
 
 If you want to learn more about the Somfy RTS protocol, check out [Pushtack](https://pushstack.wordpress.com/somfy-rts-protocol/). 
 
+### Community Contributions
+The following fixes were contributed by the community and incorporated into this release:
+- **paho-mqtt 2.x compatibility** — Based on issue identified by @digitalgravy ([PR #164](https://github.com/Nickduino/Pi-Somfy/pull/164)). Instead of pinning to <2.0.0, the code now supports both paho-mqtt 1.x and 2.x.
+- **Shutter ID case-mangling fix** — Based on fix by @gbsallery ([PR #156](https://github.com/Nickduino/Pi-Somfy/pull/156)) and analysis by @malys ([PR #159](https://github.com/Nickduino/Pi-Somfy/pull/159)). Shutter IDs containing hex letters (a-f) are now consistently uppercased when writing rolling codes, preventing duplicate config entries.
+
 
 ## 9 License
 ![Image of the license](https://i.creativecommons.org/l/by-nc-sa/4.0/88x31.png)
