@@ -2,15 +2,13 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
     <title>Operate Somfy Shutters</title>
     <style>
       .loader{color:#888;position:fixed;box-sizing:border-box;left:-9999px;top:-9999px;width:0;height:0;overflow:hidden;z-index:999999}.loader:after,.loader:before{box-sizing:border-box;display:none}.loader.is-active{background-color:rgba(241,241,241,.85);width:100%;height:100%;left:0;top:0}.loader.is-active:after,.loader.is-active:before{display:block}@keyframes rotation{0%{transform:rotate(0)}to{transform:rotate(359deg)}}@keyframes blink{0%{opacity:.5}to{opacity:1}}.loader[data-text]:before{position:fixed;left:0;top:50%;color:currentColor;font-family:Helvetica,Arial,sans-serif;text-align:center;width:100%;font-size:14px}.loader[data-text=""]:before{content:"Loading"}.loader[data-text]:not([data-text=""]):before{content:attr(data-text)}.loader[data-text][data-blink]:before{animation:blink 1s linear infinite alternate}.loader-default[data-text]:before{top:calc(50% - 63px)}.loader-default:after{content:"";position:fixed;width:48px;height:48px;border:8px solid #888;border-left-color:transparent;border-radius:50%;top:calc(50% - 24px);left:calc(50% - 24px);animation:rotation 1s linear infinite}.loader-default[data-half]:after{border-right-color:transparent}.loader-default[data-inverse]:after{animation-direction:reverse}
     </style>
-    <link rel="stylesheet" href="css/bootstrap.min.css">
-    <link rel="stylesheet" href="css/bootstrap-dialog.min.css">
+    <link rel="stylesheet" href="css/bootstrap5.min.css">
+    <link rel="stylesheet" href="css/bootstrap-icons.min.css">
     <link rel="stylesheet" href="css/bootstrap-toggle.min.css">
     <link rel="stylesheet" href="css/bootstrap-clockpicker.min.css">
     <link rel="stylesheet" href="css/bootstrap-datepicker.css">
@@ -20,9 +18,8 @@
     <link rel="stylesheet" href="css/Control.Geocoder.css" />
     <link rel="stylesheet" href="css/layout-grid.min.css" />
     <link rel="stylesheet" href="operateShutters.css">
-    <script type="text/javascript" src="js/jquery-3.3.1.min.js"></script>
-    <script type="text/javascript" src="js/bootstrap.min.js"></script>
-    <script type="text/javascript" src="js/bootstrap-dialog.min.js"></script>
+    <script type="text/javascript" src="js/jquery-4.0.0.min.js"></script>
+    <script type="text/javascript" src="js/bootstrap.bundle.min.js"></script>
     <script type="text/javascript" src="js/bootstrap-toggle.min.js"></script>
     <script type="text/javascript" src="js/bootstrap-clockpicker.min.js"></script>
     <script type="text/javascript" src="js/bootstrap-datepicker.js"></script>
@@ -60,17 +57,15 @@
         <div class="loader loader-default is-active" data-text="Loading..."></div>
         <div class="container">
 
-            <div class="panel-group" id="accordion">
-                <div class="panel panel-default">
-                    <div class="panel-heading">
-                        <h4 class="panel-title">
-                            <a data-toggle="collapse" data-parent="#accordion" href="#collapseOne">
-                                <span class="glyphicon glyphicon-cog"></span>Settings
-                            </a>
-                        </h4>
-                    </div>
-                    <div id="collapseOne" class="panel-collapse collapse">
-                        <div class="panel-body nonscroll">
+            <div class="accordion" id="accordion">
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                            <i class="bi bi-gear-fill me-2"></i>Settings
+                        </button>
+                    </h2>
+                    <div id="collapseOne" class="accordion-collapse collapse" data-bs-parent="#accordion">
+                        <div class="accordion-body nonscroll">
                             Select your home location by clicking on the map
                             or using the search button:<br><br>
                             <div class="mapOSM" id="mymap"></div>
@@ -78,21 +73,19 @@
                         </div>
                     </div>
                 </div>
-                <div class="panel panel-default">
-                    <div class="panel-heading">
-                        <h4 class="panel-title">
-                            <a data-toggle="collapse" data-parent="#accordion" href="#collapseTwo">
-                                <span class="glyphicon glyphicon-th-list"></span>Add/Remove Shutter <span id="shuttersCount" class="badge"></span>            
-                            </a>
-                        </h4>
-                    </div>
-                    <div id="collapseTwo" class="panel-collapse collapse">
-                        <div class="panel-body scroll">
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                            <i class="bi bi-list-ul me-2"></i>Add/Remove Shutter <span id="shuttersCount" class="badge text-bg-secondary ms-2"></span>
+                        </button>
+                    </h2>
+                    <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#accordion">
+                        <div class="accordion-body scroll">
                              <div class="table-wrapper">
                                  <div class="table-title">
                                      <div class="row">
                                          <div>
-                                             <button type="button" class="btn add-new addShutters"><i class="glyphicon glyphicon-plus"></i> Add New</button>
+                                             <button type="button" class="btn add-new addShutters"><i class="bi bi-plus-lg"></i> Add New</button>
                                          </div>
                                      </div>
                                  </div>
@@ -103,11 +96,11 @@
                                              <th width="20%">Operation Time (Seconds)</th>
                                              <th>Actions
                                                 <div id="action_shutters" class="table-action">
-                          			                <a class="save saveShutters" title="Add" data-toggle="tooltip"><i class="glyphicon glyphicon-floppy-save"></i></a>
-                                                    <a class="edit editShutters" title="Edit" data-toggle="tooltip"><i class="glyphicon glyphicon-pencil"></i></a>
-                                                    <a class="delete" title="Delete" data-toggle="modal" data-target="#confirm-delete"><i class="glyphicon glyphicon-trash"></i></a>
-                                                    <a class="program programShutters" title="Program" data-toggle="tooltip"><i class="glyphicon glyphicon-record"></i></a>
-                                                    <a class="program configureShutters" title="Configure" data-toggle="tooltip"><i class="glyphicon glyphicon-wrench"></i></a>
+                          		                <a class="save saveShutters" title="Add" data-bs-toggle="tooltip"><i class="bi bi-floppy"></i></a>
+                                                    <a class="edit editShutters" title="Edit" data-bs-toggle="tooltip"><i class="bi bi-pencil"></i></a>
+                                                    <a class="delete" title="Delete" data-bs-toggle="modal" data-bs-target="#confirm-delete"><i class="bi bi-trash"></i></a>
+                                                    <a class="program programShutters" title="Program" data-bs-toggle="tooltip"><i class="bi bi-record-circle"></i></a>
+                                                    <a class="program configureShutters" title="Configure" data-bs-toggle="tooltip"><i class="bi bi-wrench"></i></a>
                                                 </div>
                                              </th>
                                          </tr>
@@ -119,21 +112,19 @@
                         </div>
                     </div>
                 </div>
-                <div class="panel panel-default">
-                    <div class="panel-heading">
-                        <h4 class="panel-title">
-                            <a data-toggle="collapse" data-parent="#accordion" href="#collapseThree">
-                                <span class="glyphicon glyphicon-play"></span>Scheduled Operation <span id="scheduleCount" class="badge"></span>
-                            </a>
-                        </h4>
-                    </div>
-                    <div id="collapseThree" class="panel-collapse collapse">
-                        <div class="panel-body scroll">
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                            <i class="bi bi-play-fill me-2"></i>Scheduled Operation <span id="scheduleCount" class="badge text-bg-secondary ms-2"></span>
+                        </button>
+                    </h2>
+                    <div id="collapseThree" class="accordion-collapse collapse" data-bs-parent="#accordion">
+                        <div class="accordion-body scroll">
                              <div class="table-wrapper">
                                  <div class="table-title">
                                      <div class="row">
                                          <div>
-                                             <button type="button" class="btn add-new addSchedule"><i class="glyphicon glyphicon-plus"></i> Add New</button>
+                                             <button type="button" class="btn add-new addSchedule"><i class="bi bi-plus-lg"></i> Add New</button>
                                          </div>
                                      </div>
                                  </div>
@@ -149,15 +140,15 @@
                                                          <div class="row">
                                                              <div class="col-sm-2">
                                                                 <br>
-                                                                <input id="recordActive" type="checkbox" checked data-toggle="toggle" data-on="<i style='font-size:16px' class='glyphicon glyphicon-play'></i> Active" data-off="<i style='font-size:16px' class='glyphicon glyphicon-pause'></i> Pause" data-width="90">
+                                                                <input id="recordActive" type="checkbox" checked data-toggle="toggle" data-on="<i style='font-size:16px' class='bi bi-play-fill'></i> Active" data-off="<i style='font-size:16px' class='bi bi-pause-fill'></i> Pause" data-width="90">
                                                              </div>
                                                              <div class="col-sm-3" style="display: inline-block; white-space: nowrap;">
                                                                 <div style="width:26px; display: inline-block;">
-                                                                    <div class="row timeTypeUp"><div class="col" style="padding-left: 3px"><i class="glyphicon glyphicon-menu-up"></i></div></div>
+                                                                    <div class="row timeTypeUp"><div class="col" style="padding-left: 3px"><i class="bi bi-chevron-up"></i></div></div>
                                                                     <div class="row timeType" data-optionValue="sunrise" data-optionNext="clock" data-optionPrev="sunset"><div class="col"><img height="24" width="24" src="sunrise.png"/></div></div>
                                                                     <div class="row timeType in" data-optionValue="clock" data-optionNext="sunset" data-optionPrev="sunrise"><div class="col"><img height="24" width="24" src="clock.png"/></div></div>
                                                                     <div class="row timeType" data-optionValue="sunset" data-optionNext="sunrise" data-optionPrev="clock"><div class="col"><img height="24" width="24" src="sunset.png"/></div></div>
-                                                                    <div class="row timeTypeDown"><div class="col" style="padding-left: 3px"><i class="glyphicon glyphicon-menu-down"></i></div></div>
+                                                                    <div class="row timeTypeDown"><div class="col" style="padding-left: 3px"><i class="bi bi-chevron-down"></i></div></div>
                                                                 </div>
                                                                 <div style="display:inline-block;">
                                                                    <div class="row timeValue" data-optionValue="sunrise" style="font-size:10px;">
@@ -167,8 +158,8 @@
                                                                    <div class="row timeValue in" data-optionValue="clock">
                                                                         <div class="input-group clockpicker" style="width:100px">
                                                                             <input type="text" class="form-control" value="09:30">
-                                                                            <span class="input-group-addon">
-                                                                                <span class="glyphicon glyphicon-time"></span>
+                                                                            <span class="input-group-text">
+                                                                                <span class="bi bi-clock"></span>
                                                                             </span>
                                                                         </div><br>
                                                                    </div>
@@ -181,16 +172,16 @@
                                                              
                                                              <div class="col-sm-3">
                                                                 <div style="width:26px; display: inline-block;">
-                                                                    <div class="row repeatTypeUp"><div class="col" style="padding-left: 3px"><i class="glyphicon glyphicon-menu-up"></i></div></div>
+                                                                    <div class="row repeatTypeUp"><div class="col" style="padding-left: 3px"><i class="bi bi-chevron-up"></i></div></div>
                                                                     <div class="row repeatType" data-optionValue="once" data-optionNext="weekday" data-optionPrev="weekday"><div class="col"><img height="24" width="24" src="once.png"/></div></div>
                                                                     <div class="row repeatType in" data-optionValue="weekday" data-optionNext="once" data-optionPrev="once"><div class="col"><img height="24" width="24" src="weekday.png"/></div></div>
-                                                                    <div class="row repeatTypeDown"><div class="col" style="padding-left: 3px"><i class="glyphicon glyphicon-menu-down"></i></div></div>
+                                                                    <div class="row repeatTypeDown"><div class="col" style="padding-left: 3px"><i class="bi bi-chevron-down"></i></div></div>
                                                                 </div>
                                                                 <div style="display:inline-block;">
                                                                    <div class="row repeatValue" data-optionValue="once">
                                                                        <div class="input-group date" id="datepicker" data-date="" data-date-format="dd-mm-yyyy">
                                                                          <input class="form-control" size="16" type="text" value="" style="width:100px">
-                                                                         <span class="add-on" style="cursor: pointer;border-left: 0;border-top-left-radius: 0; border-bottom-left-radius: 0; border-top-right-radius: 4px; border-bottom-right-radius: 4px; padding: 6px 12px; font-size: 14px; font-weight: 400; line-height: 1; color: #555; text-align: center; background-color: #eee; border: 1px solid #ccc;width: 1%; white-space: nowrap; vertical-align: middle; display: table-cell;box-sizing: border-box;border-collapse: separate;"><i class="glyphicon glyphicon-calendar" style="font-size: 14px;"></i></span>
+                                                                         <span class="add-on" style="cursor: pointer;border-left: 0;border-top-left-radius: 0; border-bottom-left-radius: 0; border-top-right-radius: 4px; border-bottom-right-radius: 4px; padding: 6px 12px; font-size: 14px; font-weight: 400; line-height: 1; color: #555; text-align: center; background-color: #eee; border: 1px solid #ccc;width: 1%; white-space: nowrap; vertical-align: middle; display: table-cell;box-sizing: border-box;border-collapse: separate;"><i class="bi bi-calendar" style="font-size: 14px;"></i></span>
                                                                        </div><br>
                                                                    </div>
                                                                    <div class="row repeatValue in" data-optionValue="weekday">
@@ -209,9 +200,9 @@
 
                                                              <div class="col-sm-4">
                                                                 <div style="width:46px; display: inline-block; vertical-align: top; font-size:10px; text-align:center;">Action:<br>
-                                                                    <div id="up" class="row shutterAction shutterActionUp"><div class="col" style="padding-left: 3px"><i class="glyphicon glyphicon-arrow-up"></i></div></div>
-                                                                    <div id="stop" class="row shutterAction shutterActionStop inactiveDirection"><div class="col" style="padding-left: 3px"><i class="glyphicon glyphicon-stop"></i></div></div>
-                                                                    <div id="down" class="row shutterAction shutterActionDown inactiveDirection"><div class="col" style="padding-left: 3px"><i class="glyphicon glyphicon-arrow-down"></i></div></div>
+                                                                    <div id="up" class="row shutterAction shutterActionUp"><div class="col" style="padding-left: 3px"><i class="bi bi-arrow-up"></i></div></div>
+                                                                    <div id="stop" class="row shutterAction shutterActionStop inactiveDirection"><div class="col" style="padding-left: 3px"><i class="bi bi-stop-fill"></i></div></div>
+                                                                    <div id="down" class="row shutterAction shutterActionDown inactiveDirection"><div class="col" style="padding-left: 3px"><i class="bi bi-arrow-down"></i></div></div>
                                                                     <br style="display: block; margin: 0; padding:0; line-height:2px">
                                                                 </div>
                                                                 <div style="display:inline-block; font-size:10px; vertical-align:top;">Partial Operation:<br>
@@ -242,9 +233,9 @@
                                                 </div>
                                              <th>Actions
                                                 <div id="action_schedule" class="table-action">
-                          			    <a class="save saveSchedule" title="Add" data-toggle="tooltip"><i class="glyphicon glyphicon-floppy-save"></i></a>
-                                                    <a class="edit editSchedule" title="Edit" data-toggle="tooltip"><i class="glyphicon glyphicon-pencil"></i></a>
-                                                    <a class="delete" title="Delete" data-toggle="modal" data-target="#confirm-delete"><i class="glyphicon glyphicon-trash"></i></a>
+                          	    <a class="save saveSchedule" title="Add" data-bs-toggle="tooltip"><i class="bi bi-floppy"></i></a>
+                                                    <a class="edit editSchedule" title="Edit" data-bs-toggle="tooltip"><i class="bi bi-pencil"></i></a>
+                                                    <a class="delete" title="Delete" data-bs-toggle="modal" data-bs-target="#confirm-delete"><i class="bi bi-trash"></i></a>
                                                 </div>
                                              </th>
                                          </tr>
@@ -256,16 +247,14 @@
                         </div>
                     </div>
                 </div>
-                <div class="panel panel-default">
-                    <div class="panel-heading">
-                        <h4 class="panel-title">
-                            <a data-toggle="collapse" data-parent="#accordion" href="#collapseFour">
-                                <span class="glyphicon glyphicon-sort"></span>Manual Operation
-                            </a>
-                        </h4>
-                    </div>
-                    <div id="collapseFour" class="panel-collapse collapse in">
-                        <div class="panel-body scroll">
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="true" aria-controls="collapseFour">
+                            <i class="bi bi-arrow-down-up me-2"></i>Manual Operation
+                        </button>
+                    </h2>
+                    <div id="collapseFour" class="accordion-collapse collapse show" data-bs-parent="#accordion">
+                        <div class="accordion-body scroll">
                             <div class="table-wrapper">
 								<div id="action_manual">
 								</div>
@@ -275,30 +264,29 @@
                 </div>
             </div>
         </div>
-        <div class="modal fade" id="confirm-delete" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
-            <div class="vertical-alignment-helper">
-            <div class="modal-dialog vertical-align-center">
+        <div class="modal fade" id="confirm-delete" tabindex="-1" aria-labelledby="confirmDeleteLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                         <h4>Confirmation</h4>
+                         <h4 class="modal-title" id="confirmDeleteLabel">Confirmation</h4>
+                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                          Are you sure you want to delete this record?
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-default"       id="confirm-delete-cancel" data-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-secondary" id="confirm-delete-cancel" data-bs-dismiss="modal">Cancel</button>
                         <button type="button" class="btn btn-danger btn-ok" id="confirm-delete-ok">Delete</button>
                     </div>
                 </div>
             </div>
-            </div>
         </div>
-        <div class="modal fade" id="program-new-shutter" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
-            <div class="vertical-alignment-helper">
-            <div class="modal-dialog modal-lg vertical-align-center">
+        <div class="modal fade" id="program-new-shutter" tabindex="-1" aria-labelledby="programNewShutterLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                         <h4>Time to program your new shutter...</h4>
+                         <h4 class="modal-title" id="programNewShutterLabel">Time to program your new shutter...</h4>
+                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                          <img width="216px" height="369px" style="float:right;" src="pgminstr.png"/>
@@ -309,111 +297,104 @@
                          button on back of remote until window covering "jogs". Then proceed to press the "Try Programming Again" button below.<br><br>
                     </div>
                     <div style="clear: right;" class="modal-footer">
-                        <button type="button" class="btn btn-success" id="program-new-shutter-ok" data-dismiss="modal">It worked!!!</button>
+                        <button type="button" class="btn btn-success" id="program-new-shutter-ok" data-bs-dismiss="modal">It worked!!!</button>
                         <button type="button" class="btn btn-primary" id="program-new-shutter-try">Try Programming again</button>
                         <button type="button" class="btn btn-danger"  id="program-new-shutter-abort">Abort</button>
                     </div>
                 </div>
             </div>
-            </div>
         </div>
-        <div class="modal fade" id="configure-shutter" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
-            <div class="vertical-alignment-helper">
-            <div class="modal-dialog modal-lg vertical-align-center">
+        <div class="modal fade" id="configure-shutter" tabindex="-1" aria-labelledby="configureShutterLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
                 <div class="modal-content">
                     <div class="modal-header">
-                         <h4 class="panel-title">
+                         <h5 class="modal-title" id="configureShutterLabel">
                              Step-by-Step guides for seting up your shutters
-                         </h4>
+                         </h5>
+                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <div class="panel-group" id="configAccordion">
-                            <div class="panel panel-default">
-                                <div class="panel-heading">
-                                    <h4 class="panel-title">
-                                        <a data-toggle="collapse" data-parent="#accordion" href="#configInitialSetup">
-                                            <span class="glyphicon glyphicon-wrench"></span>Initial Setup
-                                        </a>
-                                    </h4>
-                                </div>
-                                <div id="configInitialSetup" class="panel-collapse collapse">
-                                    <div class="panel-body nonscroll">
+                        <div class="accordion" id="configAccordion">
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#configInitialSetup" aria-expanded="false" aria-controls="configInitialSetup">
+                                        <i class="bi bi-wrench me-2"></i>Initial Setup
+                                    </button>
+                                </h2>
+                                <div id="configInitialSetup" class="accordion-collapse collapse" data-bs-parent="#configAccordion">
+                                    <div class="accordion-body">
                                         Note: This process only works for unconfigured shutters in factory reset state. To perform a full factory reset (de-registers all remotes and reset all limits), hold down the reset button on the shutter until it jogs 3 times.
                                         <ol>
-                                            <li>Press <button type="button" class="btn press-button-up-down-long"><i class="glyphicon glyphicon-pencil"></i></button> to bind the shutter to this virtual remote.</li>
-                                            <li>Use the <button type="button" class="btn press-button-up-short"><i class="glyphicon glyphicon-arrow-up"></i></button> and <button type="button" class="btn press-button-down-short"><i class="glyphicon glyphicon-arrow-down"></i></button> to confirm the shutter moves in the correct direction. 
+                                            <li>Press <button type="button" class="btn press-button-up-down-long"><i class="bi bi-pencil"></i></button> to bind the shutter to this virtual remote.</li>
+                                            <li>Use the <button type="button" class="btn press-button-up-short"><i class="bi bi-arrow-up"></i></button> and <button type="button" class="btn press-button-down-short"><i class="bi bi-arrow-down"></i></button> to confirm the shutter moves in the correct direction. 
                                                 If the shutter moves in the wrong direction, click 
-                                                <button type="button" class="btn press-button-stop-long"><i class="glyphicon glyphicon-sort"></i></button> and try again.
+                                                <button type="button" class="btn press-button-stop-long"><i class="bi bi-arrow-down-up"></i></button> and try again.
                                             </li>
-                                            <li>Use <button type="button" class="btn press-button-up-short"><i class="glyphicon glyphicon-arrow-up"></i></button> and
-                                                <button type="button" class="btn press-button-down-short"><i class="glyphicon glyphicon-arrow-down"></i></button> to choose the upper limit position of the shutter.
+                                            <li>Use <button type="button" class="btn press-button-up-short"><i class="bi bi-arrow-up"></i></button> and
+                                                <button type="button" class="btn press-button-down-short"><i class="bi bi-arrow-down"></i></button> to choose the upper limit position of the shutter.
                                             </li>
                                             <li>
-                                                When you are happy with the upper limit, click <button type="button" class="btn press-button-down-stop-short"><i class="glyphicon glyphicon-circle-arrow-down"></i></button>.
+                                                When you are happy with the upper limit, click <button type="button" class="btn press-button-down-stop-short"><i class="bi bi-arrow-down-circle"></i></button>.
                                                 The shutter will begin to move down towards the lower limit.
                                             </li>
-                                            <li>When the shutter reaches your desired lower limit press <button type="button" class="btn press-button-stop-short"><i class="glyphicon glyphicon-stop"></i></button>.
+                                            <li>When the shutter reaches your desired lower limit press <button type="button" class="btn press-button-stop-short"><i class="bi bi-stop-fill"></i></button>.
                                             </li>
-                                            <li>Use <button type="button" class="btn press-button-up-short"><i class="glyphicon glyphicon-arrow-up"></i></button> and 
-                                                <button type="button" class="btn press-button-down-short"><i class="glyphicon glyphicon-arrow-down"></i></button> to adjust the lower limit of the shutter to the desired position.
+                                            <li>Use <button type="button" class="btn press-button-up-short"><i class="bi bi-arrow-up"></i></button> and 
+                                                <button type="button" class="btn press-button-down-short"><i class="bi bi-arrow-down"></i></button> to adjust the lower limit of the shutter to the desired position.
                                             </li>
                                             <li>When you are happy with the lower limit, click
-                                                <button type="button" class="btn press-button-up-stop-short"><i class="glyphicon glyphicon-circle-arrow-up"></i></button>.
+                                                <button type="button" class="btn press-button-up-stop-short"><i class="bi bi-arrow-up-circle"></i></button>.
                                                 The shutter will now return to the upper limit and stop.
                                             </li>
                                             <li>If you are unhappy with the limits, go back to step 3. Now, confirm your limit selection to save the limits:
-                                                <button type="button" class="btn press-button-stop-long"><i class="glyphicon glyphicon-saved"></i></button>
+                                                <button type="button" class="btn press-button-stop-long"><i class="bi bi-check-circle"></i></button>
                                             </li>
-                                            <li>Exit programming mode by clicking <button type="button" class="btn press-button-prog-long"><i class="glyphicon glyphicon-saved"></i></button>. Note: Some Somfy models will not respond to this command, but should now operate normally.                                               
+                                            <li>Exit programming mode by clicking <button type="button" class="btn press-button-prog-long"><i class="bi bi-check-circle"></i></button>. Note: Some Somfy models will not respond to this command, but should now operate normally.                                               
                                             </li>
                                         </ol>
                                     </div>
                                 </div>
                             </div>
-                            <div class="panel panel-default">
-                                <div class="panel-heading">
-                                    <h4 class="panel-title">
-                                        <a data-toggle="collapse" data-parent="#accordion" href="#configLimits">
-                                            <span class="glyphicon glyphicon-sort-by-attributes"></span>Adjust Shutter Limits
-                                        </a>
-                                    </h4>
-                                </div>
-                                <div id="configLimits" class="panel-collapse collapse">
-                                    <div class="panel-body nonscroll">
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#configLimits" aria-expanded="false" aria-controls="configLimits">
+                                        <i class="bi bi-sort-numeric-down me-2"></i>Adjust Shutter Limits
+                                    </button>
+                                </h2>
+                                <div id="configLimits" class="accordion-collapse collapse" data-bs-parent="#configAccordion">
+                                    <div class="accordion-body">
                                         <ol>
                                             <li>First, move the shutter to the limit you want to adjust:
-                                                <button type="button" class="btn press-button-up-short"><i class="glyphicon glyphicon-arrow-up"></i></button>
-                                                <button type="button" class="btn press-button-down-short"><i class="glyphicon glyphicon-arrow-down"></i></button>. 
+                                                <button type="button" class="btn press-button-up-short"><i class="bi bi-arrow-up"></i></button>
+                                                <button type="button" class="btn press-button-down-short"><i class="bi bi-arrow-down"></i></button>. 
                                             </li>
-                                            <li>Once stopped at the limit, press <button type="button" class="btn press-button-up-down-long"><i class="glyphicon glyphicon-pencil"></i></button> to enter edit mode.
+                                            <li>Once stopped at the limit, press <button type="button" class="btn press-button-up-down-long"><i class="bi bi-pencil"></i></button> to enter edit mode.
                                             </li>
-                                            <li>Use <button type="button" class="btn press-button-up-short"><i class="glyphicon glyphicon-arrow-up"></i></button> and
-                                                <button type="button" class="btn press-button-down-short"><i class="glyphicon glyphicon-arrow-down"></i></button> to adjust the limit position of the shutter.
+                                            <li>Use <button type="button" class="btn press-button-up-short"><i class="bi bi-arrow-up"></i></button> and
+                                                <button type="button" class="btn press-button-down-short"><i class="bi bi-arrow-down"></i></button> to adjust the limit position of the shutter.
                                             </li>
-                                            <li>Save the new limit position by clicking <button type="button" class="btn press-button-stop-long"><i class="glyphicon glyphicon-saved"></i></button>.
+                                            <li>Save the new limit position by clicking <button type="button" class="btn press-button-stop-long"><i class="bi bi-check-circle"></i></button>.
                                             </li>
                                             <li>To abort the procedure, wait two minutes. The shutter will jog, and the limits will be unchanged.</li>
                                         </ol>
                                     </div>
                                 </div>
                             </div>
-                            <div class="panel panel-default">
-                                <div class="panel-heading">
-                                    <h4 class="panel-title">
-                                        <a data-toggle="collapse" data-parent="#accordion" href="#configMyPosition">
-                                            <span class="glyphicon glyphicon-screenshot"></span>Setting the "My" Position
-                                        </a>
-                                    </h4>
-                                </div>
-                                <div id="configMyPosition" class="panel-collapse collapse">
-                                    <div class="panel-body nonscroll">
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#configMyPosition" aria-expanded="false" aria-controls="configMyPosition">
+                                        <i class="bi bi-bullseye me-2"></i>Setting the "My" Position
+                                    </button>
+                                </h2>
+                                <div id="configMyPosition" class="accordion-collapse collapse" data-bs-parent="#configAccordion">
+                                    <div class="accordion-body">
                                         <ol>
                                             <li>Move the shutter to the position you want to save:
-                                                <button type="button" class="btn press-button-up-short"><i class="glyphicon glyphicon-arrow-up"></i></button>
-                                                <button type="button" class="btn press-button-down-short"><i class="glyphicon glyphicon-arrow-down"></i></button>
-                                                <button type="button" class="btn press-button-stop-short"><i class="glyphicon glyphicon-stop"></i></button>. 
+                                                <button type="button" class="btn press-button-up-short"><i class="bi bi-arrow-up"></i></button>
+                                                <button type="button" class="btn press-button-down-short"><i class="bi bi-arrow-down"></i></button>
+                                                <button type="button" class="btn press-button-stop-short"><i class="bi bi-stop-fill"></i></button>. 
                                             </li>
-                                            <li>Press <button type="button" class="btn press-button-stop-long"><i class="glyphicon glyphicon-floppy-save"></i></button> to save the My position.
+                                            <li>Press <button type="button" class="btn press-button-stop-long"><i class="bi bi-floppy"></i></button> to save the My position.
                                             </li>
                                             <li>Hint: You can return to the My position by pressing the Stop button when the shutter is not in motion.
                                             </li>
@@ -421,20 +402,18 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="panel panel-default">
-                                <div class="panel-heading">
-                                    <h4 class="panel-title">
-                                        <a data-toggle="collapse" data-parent="#accordion" href="#configClearMy">
-                                            <span class="glyphicon glyphicon-remove-circle"></span>Clearing the "My" Position
-                                        </a>
-                                    </h4>
-                                </div>
-                                <div id="configClearMy" class="panel-collapse collapse">
-                                    <div class="panel-body nonscroll">
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#configClearMy" aria-expanded="false" aria-controls="configClearMy">
+                                        <i class="bi bi-x-circle me-2"></i>Clearing the "My" Position
+                                    </button>
+                                </h2>
+                                <div id="configClearMy" class="accordion-collapse collapse" data-bs-parent="#configAccordion">
+                                    <div class="accordion-body">
                                         <ol>
-                                            <li>Move the shutter to the My position: <button type="button" class="btn press-button-stop-short"><i class="glyphicon glyphicon-screenshot"></i></button>. 
+                                            <li>Move the shutter to the My position: <button type="button" class="btn press-button-stop-short"><i class="bi bi-bullseye"></i></button>. 
                                             </li>
-                                            <li>Press <button type="button" class="btn press-button-stop-long"><i class="glyphicon glyphicon-floppy-save"></i></button> to clear the My position.
+                                            <li>Press <button type="button" class="btn press-button-stop-long"><i class="bi bi-floppy"></i></button> to clear the My position.
                                             </li>
                                         </ol>
                                     </div>
@@ -443,12 +422,10 @@
                         </div>
                     </div>
                     <div style="clear: right;" class="modal-footer">
-                        <button type="button" class="btn btn-success" id="configure-shutter-done" data-dismiss="modal">Done</button>
+                        <button type="button" class="btn btn-success" id="configure-shutter-done" data-bs-dismiss="modal">Done</button>
                     </div>
                 </div>
             </div>
-            </div>
         </div>
   </body>
-</script>
 </html>

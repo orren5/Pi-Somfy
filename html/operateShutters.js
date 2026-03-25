@@ -11,6 +11,40 @@ const buttonUp = 0x2;
 const buttonDown = 0x4;
 const buttonProg = 0x8;
 
+// BootstrapDialog shim for Bootstrap 5 (replaces bootstrap-dialog.min.js)
+var BootstrapDialog = {
+    TYPE_DANGER: 'danger',
+    TYPE_INFO: 'info',
+    TYPE_WARNING: 'warning',
+    TYPE_SUCCESS: 'success',
+    show: function(options) {
+        var type = options.type || 'info';
+        var title = options.title || '';
+        var message = options.message || '';
+        var onhide = options.onhide || null;
+        var headerClass = 'text-bg-' + type;
+        var id = 'bs-dialog-' + Date.now();
+        var html = '<div class="modal fade" id="' + id + '" tabindex="-1">' +
+            '<div class="modal-dialog modal-dialog-centered"><div class="modal-content">' +
+            '<div class="modal-header ' + headerClass + '">' +
+            '<h5 class="modal-title">' + title + '</h5>' +
+            '<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>' +
+            '<div class="modal-body">' + message + '</div>' +
+            '<div class="modal-footer">' +
+            '<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>' +
+            '</div></div></div></div>';
+        $('body').append(html);
+        var modalEl = document.getElementById(id);
+        var modal = new bootstrap.Modal(modalEl);
+        modalEl.addEventListener('hidden.bs.modal', function() {
+            modal.dispose();
+            modalEl.remove();
+            if (onhide) onhide();
+        });
+        modal.show();
+    }
+};
+
 
 GetStartupInfo(true);
 $(document).ready(function() {
@@ -43,7 +77,7 @@ function GetStartupInfo(initMap)
                if (config.Longitude == 0) {
                    $('#collapseOne').collapse('show');
                } else if (Object.keys(config.Shutters).length == 0){
-                   $('.panel-collapse.in').collapse('toggle'); 
+                   $('.accordion-collapse.show').collapse('toggle'); 
                    $('#collapseTwo').collapse('show');
                }
                $(".loader").removeClass("is-active");
@@ -181,7 +215,7 @@ function addShutter(temp_id, name, duration) {
                       $("#shutters tbody tr:last-child").attr('name', result.id);
                       sendCommand(result.id, "program", function() {$('#program-new-shutter').modal('show');})
                    } else {
-                      $(modalCallerIconElement).addClass("glyphicon-floppy-save").removeClass("glyphicon-refresh").removeClass("gly-spin");
+                      $(modalCallerIconElement).addClass("bi-floppy").removeClass("bi-arrow-clockwise").removeClass("gly-spin");
         	      $(modalCallerIconElement).parents("tr").find(".save, .edit").toggle();
 	              $(modalCallerIconElement).parents("tr").find(".delete").show();
                       BootstrapDialog.show({type: BootstrapDialog.TYPE_DANGER, title: 'Error', message:'Received Error from Server: '+result.message, onhide: function(){GetStartupInfo(false);}});
@@ -254,7 +288,7 @@ function addSchedule(temp_id, param) {
                    evt = config.Schedule[result.id];
                    $(modalCallerIconElement).parents("tr").find('#scheduleText').html(prettyPrintSchedule(evt, config.Shutters));
                    $(modalCallerIconElement).parents("tr").find(".editbox").toggle();              
-                   $(modalCallerIconElement).addClass("glyphicon-floppy-save").removeClass("glyphicon-refresh").removeClass("gly-spin");
+                   $(modalCallerIconElement).addClass("bi-floppy").removeClass("bi-arrow-clockwise").removeClass("gly-spin");
         	   $(modalCallerIconElement).parents("tr").find(".save, .edit").toggle();
 	           $(modalCallerIconElement).parents("tr").find(".delete").show();
                    if ((status=="success") && (result.status == "OK")) {
@@ -307,9 +341,9 @@ function setupTableShutters () {
 
         var cell = '<div class="shutterRemote" name="'+shutter+'">' + 
 						'<div class="name">'+config.Shutters[shutter]+'</div>' +
-                        '<a class="up btn" title="Up" data-toggle="tooltip" role="button"><img src="up.png"></a>' +
-                        '<a class="stop btn" title="Stop" data-toggle="tooltip" role="button"><img src="stop.png"></a>' +
-                        '<a class="down btn" title="Down" data-toggle="tooltip" role="button"><img src="down.png"></a>' +
+                        '<a class="up btn" title="Up" data-bs-toggle="tooltip" role="button"><img src="up.png"></a>' +
+                        '<a class="stop btn" title="Stop" data-bs-toggle="tooltip" role="button"><img src="stop.png"></a>' +
+                        '<a class="down btn" title="Down" data-bs-toggle="tooltip" role="button"><img src="down.png"></a>' +
                   '</div>';
         $("#action_manual").append(cell);
         c++;
@@ -416,7 +450,7 @@ function setupTableSchedule () {
     $('.editbox').hide();
     $('.editbox.in').show();
 
-    $('[data-toggle="tooltip"]').tooltip();
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function(el) { new bootstrap.Tooltip(el); });
     $('[rowtype="existing"] input[type=checkbox][data-toggle^=toggle]').bootstrapToggle();
 
     $('[rowtype="existing"] .clockDelay').bootstrapSlider();
@@ -447,7 +481,7 @@ function setupListeners() {
         locateUser();
     });
 
-    $('[data-toggle="tooltip"]').tooltip();
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function(el) { new bootstrap.Tooltip(el); });
 
     // Append table with add row form on add new button click
     $(".addShutters").click(function(){
@@ -461,7 +495,7 @@ function setupListeners() {
     	$("#shutters").append(row);		
 
 	$('#shutters tbody tr').eq(index + 1).find('.save, .edit').toggle();
-        $('[data-toggle="tooltip"]').tooltip();
+        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function(el) { new bootstrap.Tooltip(el); });
     });
 
     // Append table with add row form on add new button click
@@ -499,7 +533,7 @@ function setupListeners() {
         thisRow.find('.shuttersList').multiselect({dropUp: true, maxHeight: 100, includeSelectAllOption: true, buttonWidth: '130px', nonSelectedText: 'Please Select...', numberDisplayed: 1});
 
 	$('#schedule tbody tr').eq(index + 1).find('.save, .edit').toggle();
-        $('[data-toggle="tooltip"]').tooltip();
+        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function(el) { new bootstrap.Tooltip(el); });
     });
 
     // Add row on add button click
@@ -530,13 +564,13 @@ function setupListeners() {
            $("#shuttersCount").text($("#shutters").find('tr').length-1);
            if (mytype == "ADD") {
               modalCallerIconElement = $(this).find("i");
-              $(modalCallerIconElement).toggleClass("glyphicon-floppy-save").toggleClass("glyphicon-refresh").addClass("gly-spin");
+              $(modalCallerIconElement).toggleClass("bi-floppy").toggleClass("bi-arrow-clockwise").addClass("gly-spin");
               addShutter(mydata.id, mydata.name, mydata.duration);
            } else if (mytype == "AMEND") { 
               var iconElement = $(this).find("i");
-              $(iconElement).toggleClass("glyphicon-floppy-save").toggleClass("glyphicon-refresh").addClass("gly-spin");
+              $(iconElement).toggleClass("bi-floppy").toggleClass("bi-arrow-clockwise").addClass("gly-spin");
               editShutter(mydata.id, mydata.name, mydata.duration, function(){
-                 $(iconElement).toggleClass("glyphicon-floppy-save").toggleClass("glyphicon-refresh").removeClass("gly-spin")
+                 $(iconElement).toggleClass("bi-floppy").toggleClass("bi-arrow-clockwise").removeClass("gly-spin")
     	         $(iconElement).parents("tr").find(".save, .edit").toggle();
 	         $(iconElement).parents("tr").find(".delete").show();
               });
@@ -642,17 +676,17 @@ function setupListeners() {
            $("#scheduleCount").text($("#schedule").find('tr').length-1);
            if (mytype == "ADD") {
               modalCallerIconElement = $(this).find("i");
-              $(modalCallerIconElement).toggleClass("glyphicon-floppy-save").toggleClass("glyphicon-refresh").addClass("gly-spin");
+              $(modalCallerIconElement).toggleClass("bi-floppy").toggleClass("bi-arrow-clockwise").addClass("gly-spin");
               addSchedule(mydata.id, mydata);
            } else if (mytype == "AMEND") { 
               var iconElement = $(this).find("i");
-              $(iconElement).toggleClass("glyphicon-floppy-save").toggleClass("glyphicon-refresh").addClass("gly-spin");
+              $(iconElement).toggleClass("bi-floppy").toggleClass("bi-arrow-clockwise").addClass("gly-spin");
               editSchedule(mydata.id, mydata, function(){
                  config.Schedule[mydata.id] = mydata;
                  evt = config.Schedule[mydata.id];
                  $(iconElement).parents("tr").find('#scheduleText').html(prettyPrintSchedule(evt, config.Shutters));
                  $(iconElement).parents("tr").find(".editbox").toggle();              
-                 $(iconElement).toggleClass("glyphicon-floppy-save").toggleClass("glyphicon-refresh").removeClass("gly-spin")
+                 $(iconElement).toggleClass("bi-floppy").toggleClass("bi-arrow-clockwise").removeClass("gly-spin")
     	         $(iconElement).parents("tr").find(".save, .edit").toggle();
 	         $(iconElement).parents("tr").find(".delete").show();
               });
@@ -743,12 +777,12 @@ function setupListeners() {
 
     $(document).on("click", ".delete", function(){		
         modalCallerIconElement = $(this).find("i");
-        $(modalCallerIconElement).toggleClass("glyphicon-trash").toggleClass("glyphicon-refresh").addClass("gly-spin");
+        $(modalCallerIconElement).toggleClass("bi-trash").toggleClass("bi-arrow-clockwise").addClass("gly-spin");
     });
 
     
     $('#confirm-delete').on('hide.bs.modal', function(e) {
-        $(modalCallerIconElement).addClass("glyphicon-trash").removeClass("glyphicon-refresh").removeClass("gly-spin");
+        $(modalCallerIconElement).addClass("bi-trash").removeClass("bi-arrow-clockwise").removeClass("gly-spin");
     }); 
     
     $('#confirm-delete-ok').on("click", function(){
@@ -769,7 +803,7 @@ function setupListeners() {
 
 
     $('#program-new-shutter').on('hide.bs.modal', function(e) {
-        $(modalCallerIconElement).addClass("glyphicon-floppy-save").removeClass("glyphicon-refresh").removeClass("gly-spin");
+        $(modalCallerIconElement).addClass("bi-floppy").removeClass("bi-arrow-clockwise").removeClass("gly-spin");
         $(modalCallerIconElement).parents("tr").find(".save, .edit").toggle();
 	$(modalCallerIconElement).parents("tr").find(".delete").show();
         GetStartupInfo(false);
@@ -842,24 +876,24 @@ function setupListeners() {
     $(document).on("click", ".up", function(){		
         var key = $(this).parents("div").attr('name');
         var iconElement = $(this).find("img");
-        // $(iconElement).toggleClass("glyphicon-triangle-top").toggleClass("glyphicon-refresh").addClass("gly-spin");
-        // sendCommand(key, "up", function(){$(iconElement).toggleClass("glyphicon-triangle-top").toggleClass("glyphicon-refresh").removeClass("gly-spin")});
+        // $(iconElement).toggleClass("bi-caret-up").toggleClass("bi-arrow-clockwise").addClass("gly-spin");
+        // sendCommand(key, "up", function(){$(iconElement).toggleClass("bi-caret-up").toggleClass("bi-arrow-clockwise").removeClass("gly-spin")});
         $(iconElement).toggleClass("button_transparent");
         sendCommand(key, "up", function(){$(iconElement).toggleClass("button_transparent")});
     });
     $(document).on("click", ".down", function(){		
         var key = $(this).parents("div").attr('name');
         var iconElement = $(this).find("img");
-        // $(iconElement).toggleClass("glyphicon-triangle-bottom").toggleClass("glyphicon-refresh").addClass("gly-spin");
-        // sendCommand(key, "down", function(){$(iconElement).toggleClass("glyphicon-triangle-bottom").toggleClass("glyphicon-refresh").removeClass("gly-spin")});
+        // $(iconElement).toggleClass("bi-caret-down").toggleClass("bi-arrow-clockwise").addClass("gly-spin");
+        // sendCommand(key, "down", function(){$(iconElement).toggleClass("bi-caret-down").toggleClass("bi-arrow-clockwise").removeClass("gly-spin")});
         $(iconElement).toggleClass("button_transparent");
         sendCommand(key, "down", function(){$(iconElement).toggleClass("button_transparent")});
     });
     $(document).on("click", ".stop", function(){		
         var key = $(this).parents("div").attr('name');
         var iconElement = $(this).find("img");
-        // $(iconElement).toggleClass("glyphicon-minus").toggleClass("glyphicon-refresh").addClass("gly-spin");
-        // sendCommand(key, "stop", function(){$(iconElement).toggleClass("glyphicon-minus").toggleClass("glyphicon-refresh").removeClass("gly-spin")});
+        // $(iconElement).toggleClass("bi-dash").toggleClass("bi-arrow-clockwise").addClass("gly-spin");
+        // sendCommand(key, "stop", function(){$(iconElement).toggleClass("bi-dash").toggleClass("bi-arrow-clockwise").removeClass("gly-spin")});
         $(iconElement).toggleClass("button_transparent");
         sendCommand(key, "stop", function(){$(iconElement).toggleClass("button_transparent")});
     });

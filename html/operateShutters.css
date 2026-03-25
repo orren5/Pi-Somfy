@@ -3,41 +3,42 @@ body {
     margin-bottom: 15px;
 }
 
-.panel-heading {
+.accordion-header {
 	position: sticky;
 	top: 0px;
+	z-index: 1;
 }
 
-.panel-title .glyphicon { 
+.accordion-button i.bi { 
     margin-right:20px; 
 }
 
-.panel-title { 
+.accordion-button { 
     font-size: 18px;
     font-weight: bold;
     font-family: Arial;
 }
 
-.panel-body.scroll {
+.accordion-body.scroll {
     margin: 0px !important;
     padding: 0px !important;
 }
 
-.panel-body.nonscroll {
+.accordion-body.nonscroll {
     margin: 0px; 
     padding: 25px;
     overflow: hidden; 
 }
 
-.panel-body table tr td { 
+.accordion-body table tr td { 
     padding-left: 15px 
 }
 
-.panel-body .table {
+.accordion-body .table {
     margin-bottom: 0px; 
 }
 
-.panel-collapse .collapse .in {
+.accordion-collapse.collapse.show {
     height: 100%
 }
 
@@ -172,7 +173,6 @@ table td a.stop:hover {
 
 .button_transparent {
   opacity: 0.5;
-  filter: alpha(opacity=50); /* For IE8 and earlier */
   position: relative;
   top: 0px;
 }
@@ -203,83 +203,23 @@ table.table td .save {
     display: none;
 }
 
-.vertical-alignment-helper {
-    display:table;
-    height: 100%;
-    width: 100%;
-    pointer-events:none; /* This makes sure that we can still click outside of the modal to close it */
-}
-
-.vertical-align-center {
-    /* To center vertically */
-    display: table-cell;
-    vertical-align: middle;
-    pointer-events:none;
-}
-
-.modal-content {
-    /* Bootstrap sets the size of the modal in the modal-dialog class, we need to inherit it */
-    width:inherit;
-    max-width:inherit; /* For Bootstrap 4 - to avoid the modal window stretching full width */
-    height:inherit;
-    /* To center horizontally */
-    margin: 0 auto;
-    pointer-events: all;
-}
-
 .gly-spin {
-  -webkit-animation: spin 2s infinite linear;
-  -moz-animation: spin 2s infinite linear;
-  -o-animation: spin 2s infinite linear;
   animation: spin 2s infinite linear;
-}
-
-@-moz-keyframes spin {
-  0% {
-    -moz-transform: rotate(0deg);
-  }
-  100% {
-    -moz-transform: rotate(359deg);
-  }
-}
-
-@-webkit-keyframes spin {
-  0% {
-    -webkit-transform: rotate(0deg);
-  }
-  100% {
-    -webkit-transform: rotate(359deg);
-  }
-}
-
-@-o-keyframes spin {
-  0% {
-    -o-transform: rotate(0deg);
-  }
-  100% {
-    -o-transform: rotate(359deg);
-  }
 }
 
 @keyframes spin {
   0% {
-    -webkit-transform: rotate(0deg);
     transform: rotate(0deg);
   }
   100% {
-    -webkit-transform: rotate(359deg);
     transform: rotate(359deg);
   }
 }
 
 .row-eq-height {
-  display: -webkit-box;
-  display: -webkit-flex;
-  display: -ms-flexbox;
-  display:         flex;
-  align-items: center;     /* Align the flex-items vertically */
-  justify-content: center; /* Optional, to align inner flex-items
-                              horizontally within the column  */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .timeTypeUp, .timeTypeDown, .repeatTypeUp, .repeatTypeDown {
