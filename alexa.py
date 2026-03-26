@@ -26,19 +26,31 @@ THE SOFTWARE.
 
 # For a complete discussion, see http://www.makermusings.com
 # TODO(semartin): investigate time.sleep usage in here...
+#
+# Original standalone CLI config (fauxmo_config.json) for reference:
+#   {"FAUXMO": {"ip_address": "auto"},
+#    "PLUGINS": {"SimpleHTTPPlugin": {"DEVICES": [
+#      {"name": "SOMFY",
+#       "on_cmd": "http://localhost:80/cmd/stop?shutter={SHUTTER_ID}",
+#       "off_cmd": "http://localhost:80/cmd/up?shutter={SHUTTER_ID}",
+#       "method": "POST", "initial_state": "on", "use_fake_state": true}]}}}
+# This config is not used; the Alexa class at the bottom of this module
+# imports the fauxmo classes directly.
 
 import email.utils
+import os
 import requests
 import select
 import socket
 import struct
 import sys
 import time
+import threading
 import urllib
 import uuid
 
 try:
-    from mylog import MyLog
+    from config import MyLog
 except Exception as e1:
     print("\n\nThis program requires the modules located from the same github repository that are not present.\n")
     print("Error: " + str(e1))
@@ -47,7 +59,7 @@ except Exception as e1:
 # This XML is the minimum needed to define one of our virtual switches
 # to the Amazon Echo
 
-SETUP_XML ="""<?xml version=1.0?>
+SETUP_XML ="""<?xml version="1.0"?>
             <root>
              <device>
                 <deviceType>urn:Belkin:device:controllee:1</deviceType>
@@ -55,7 +67,7 @@ SETUP_XML ="""<?xml version=1.0?>
                 <manufacturer>Belkin International Inc.</manufacturer>
                 <modelName>Socket</modelName>
                 <modelNumber>3.1415</modelNumber>
-                <modelDescription>Belkin Plugin Socket 1.0</modelDescription>\r\n
+                <modelDescription>Belkin Plugin Socket 1.0</modelDescription>
                 <UDN>uuid:Socket-1_0-%(device_serial)s</UDN>
                 <serialNumber>221517K0101769</serialNumber>
                 <binaryState>0</binaryState>
@@ -77,29 +89,58 @@ SETUP_XML ="""<?xml version=1.0?>
 
 class poller (MyLog):
     def __init__(self, log):
-        self.poller = select.poll()
         self.targets = {}
         self.log = log
+        # select.poll() is not available on Windows; fall back to select.select()
+        self._use_poll = hasattr(select, 'poll')
+        if self._use_poll:
+            self._poller = select.poll()
+        else:
+            self._sockets = {}  # fileno -> socket object (needed for select.select on Windows)
 
     def add(self, target, fileno = None):
         if not fileno:
             fileno = target.fileno()
-        self.poller.register(fileno, select.POLLIN)
+        if self._use_poll:
+            self._poller.register(fileno, select.POLLIN)
+        else:
+            # On Windows, select.select() needs socket objects, not ints
+            sock = target.socket if hasattr(target, 'socket') else target.ssock if hasattr(target, 'ssock') else None
+            if fileno != target.fileno() and hasattr(target, 'client_sockets') and fileno in target.client_sockets:
+                sock = target.client_sockets[fileno][0]
+            if sock is not None:
+                self._sockets[fileno] = sock
         self.targets[fileno] = target
 
     def remove(self, target, fileno = None):
         if not fileno:
             fileno = target.fileno()
-        self.poller.unregister(fileno)
+        if self._use_poll:
+            self._poller.unregister(fileno)
+        else:
+            self._sockets.pop(fileno, None)
         del(self.targets[fileno])
 
     def poll(self, timeout = 0):
-        ready = self.poller.poll(timeout)
-        num = len(ready)
-        for one_ready in ready:
-            target = self.targets.get(one_ready[0], None)
-            if target:
-                target.do_read(one_ready[0])
+        if self._use_poll:
+            ready = self._poller.poll(timeout)
+            num = len(ready)
+            for one_ready in ready:
+                target = self.targets.get(one_ready[0], None)
+                if target:
+                    target.do_read(one_ready[0])
+        else:
+            # Windows fallback using select.select() with socket objects
+            socks = list(self._sockets.values())
+            if not socks:
+                return 0
+            readable, _, _ = select.select(socks, [], [], timeout / 1000.0 if timeout else 0)
+            num = len(readable)
+            for sock in readable:
+                fileno = sock.fileno()
+                target = self.targets.get(fileno, None)
+                if target:
+                    target.do_read(fileno)
         return num
 
 
@@ -192,8 +233,12 @@ class upnp_device(MyLog, object):
                 message += "%s\r\n" % header
         message += "\r\n"
         temp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        temp_socket.sendto(bytes(message, 'UTF-8'), destination)
-        #print("Responding to search-->" + message )    
+        try:
+            for _ in range(3):
+                temp_socket.sendto(bytes(message, 'UTF-8'), destination)
+                time.sleep(0.1)
+        finally:
+            temp_socket.close()
 
 # This subclass does the bulk of the work to mimic a WeMo switch on the network.
 
@@ -282,7 +327,7 @@ class fauxmo(upnp_device):
                            "%s" % (len(soap), date_str, soap))
                 socket.send(bytes(message, 'UTF-8'))
                 
-        elif data.find('GetBinaryState'):
+        elif data.find('GetBinaryState') != -1:
             #if data.find('<BinaryState>1</BinaryState>') != -1:
             #    switch_sate="1"
             #else:
@@ -375,8 +420,7 @@ class upnp_broadcast_responder(MyLog, object):
         data, sender = self.recvfrom(1024)
         data = data.decode('utf-8')
         if data:
-            #if data.find('M-SEARCH') == 0 and data.find('urn:Belkin:device:**') != -1:
-            if data.find('M-SEARCH') >= 0 and data.find('urn:Belkin:device:**') >0 or data.find('n:Belkin:device:**') >0 or data.find('upnp:rootdevice') >0:
+            if data.find('M-SEARCH') >= 0 and (data.find('urn:Belkin:device:**') > 0 or data.find('upnp:rootdevice') > 0):
                 for device in self.devices:
                     time.sleep(0.5)
                     device.respond_to_search(sender, 'urn:Belkin:device:**')
@@ -398,7 +442,7 @@ class upnp_broadcast_responder(MyLog, object):
             else:
                 return False, False
         except Exception:
-            self.LogError('Error: excception occured in recvfrom')
+            self.LogError('Error: exception occurred in recvfrom')
             return False, False
 
     def add_device(self, device):
@@ -439,5 +483,111 @@ class debounce_handler(object):
 
         self.lastEcho = time.time()
         return False
+
+
+##############################################################################################
+#### BASED ON WORK BY : https://github.com/nassir-malik/IOT-Pi3-Alexa-Automation          ####
+##############################################################################################
+
+class device_handler(debounce_handler, MyLog):
+    """Publishes the on/off state requested,
+       and the IP address of the Echo making the request.
+    """
+    def __init__(self, log=None, shutter=None, config=None):
+        self.log = log
+        self.shutter = shutter
+        self.config = config
+        super(device_handler, self).__init__()        
+    
+    def act(self, client_address, state, name):
+        self.LogInfo("--> State " + str(state) + " on " + name + " from client @ " + client_address)
+        shutterId = self.config.ShuttersByName[name]
+        if state:
+           self.shutter.lower(shutterId)
+        else:
+           self.shutter.rise(shutterId)
+        return True
+
+
+class Alexa(threading.Thread, MyLog):
+
+    def __init__(self, group=None, target=None, name=None, args=(), kwargs=None):
+        threading.Thread.__init__(self, group=group, target=target, name="Alexa")
+        self.shutdown_flag = threading.Event()
+        
+        self.args = args
+        self.kwargs = kwargs
+        if kwargs["log"] != None:
+            self.log = kwargs["log"]
+        if kwargs["shutter"] != None:
+            self.shutter = kwargs["shutter"]
+        if kwargs["config"] != None:
+            self.config = kwargs["config"]
+        
+        # Startup the fauxmo server
+        self.poller = poller(log = self.log)
+        self.upnp_responder = upnp_broadcast_responder(log = self.log)
+        self.upnp_responder.init_socket()
+        self.poller.add(self.upnp_responder)
+
+        # Register the device callback as a fauxmo handler
+        self.dbh = device_handler(log=self.log, shutter=self.shutter, config=self.config)
+        self.fauxmo_devices = {}  # name -> fauxmo instance
+        for shutter, shutterId in sorted(self.config.ShuttersByName.items(), key=lambda kv: kv[1]):
+            self._register_device(shutter, shutterId)
+
+        return
+
+    def _register_device(self, name, shutterId):
+        portId = 50000 + (abs(int(shutterId, 16)) % 10000)
+        self.LogInfo("Remote address in dec: " + str(int(shutterId, 16)) + ", WeMo port will be n°" + str(portId))
+        dev = fauxmo(name, self.upnp_responder, self.poller, None, portId, self.dbh, log=self.log)
+        self.fauxmo_devices[name] = dev
+
+    def _sync_devices(self):
+        """Register/deregister fauxmo devices to match current config."""
+        current = set(self.config.ShuttersByName.keys())
+        registered = set(self.fauxmo_devices.keys())
+
+        # Register new shutters
+        for name in current - registered:
+            shutterId = self.config.ShuttersByName[name]
+            self.LogInfo("New shutter detected, registering Alexa device: " + name)
+            self._register_device(name, shutterId)
+
+        # Deregister removed shutters
+        for name in registered - current:
+            self.LogInfo("Shutter removed, deregistering Alexa device: " + name)
+            dev = self.fauxmo_devices.pop(name)
+            # Remove device TCP socket from poller
+            self.poller.remove(dev)
+            # Remove from UPnP responder device list
+            if dev in self.upnp_responder.devices:
+                self.upnp_responder.devices.remove(dev)
+            try:
+                dev.socket.close()
+            except Exception:
+                pass
+
+    def run(self):
+        self.LogInfo("Entering fauxmo polling loop")
+        error = 0
+        sync_counter = 0
+        while not self.shutdown_flag.is_set():
+            # Loop and poll for incoming Echo requests
+            try:
+                # Allow time for a ctrl-c to stop the process
+                self.poller.poll(100)
+                time.sleep(0.01)
+                # Check for new/removed shutters every ~5 seconds
+                sync_counter += 1
+                if sync_counter >= 50:
+                    sync_counter = 0
+                    self._sync_devices()
+            except Exception as e:
+                error += 1
+                self.LogInfo("Critical exception n°" + str(error) + ": "+ str(e.args))
+                print("Trying not to shut down Alexa")
+                time.sleep(0.5) #Wait half a second when an exception occurs
 
 
