@@ -2,6 +2,38 @@
 # -*- coding: utf-8 -*-
 
 import sys, re, argparse
+
+# ── Platform detection & stubs for Windows development ──────────────────────
+WINDOWS = (sys.platform == "win32")
+
+if WINDOWS:
+    import types
+    # fcntl is Unix-only (used for lock files)
+    _fcntl = types.ModuleType("fcntl")
+    _fcntl.LOCK_EX = 0
+    _fcntl.LOCK_NB = 0
+    _fcntl.lockf = lambda *a, **kw: None
+    sys.modules["fcntl"] = _fcntl
+
+    # pigpio requires Raspberry Pi hardware
+    _pigpio = types.ModuleType("pigpio")
+    _pigpio.OUTPUT = 0
+    class _FakePulse:
+        def __init__(self, *a, **kw): pass
+    _pigpio.pulse = _FakePulse
+    class _FakePi:
+        connected = True
+        def wave_add_new(self): pass
+        def set_mode(self, *a): pass
+        def wave_add_generic(self, *a): pass
+        def wave_create(self): return 0
+        def wave_send_once(self, *a): pass
+        def wave_tx_busy(self): return False
+        def wave_delete(self, *a): pass
+        def stop(self): pass
+    _pigpio.pi = _FakePi
+    sys.modules["pigpio"] = _pigpio
+
 import fcntl
 import os
 import locale
@@ -15,15 +47,15 @@ import logging, logging.handlers
 import threading
 
 try:
-    from myconfig import MyConfig
-    from mylog import SetupLogger
-    from mylog import MyLog
-    from myscheduler import Event
-    from myscheduler import Schedule
-    from myscheduler import Scheduler
-    from mywebserver import FlaskAppWrapper
-    from myalexa import Alexa
-    from mymqtt import MQTT
+    from config import MyConfig
+    from config import SetupLogger
+    from config import MyLog
+    from scheduler import Event
+    from scheduler import Schedule
+    from scheduler import Scheduler
+    from webserver import FlaskAppWrapper
+    from alexa import Alexa
+    from mqtt import MQTT
     from shutil import copyfile
 except Exception as e1:
     print("\n\nThis program requires the modules located from the same github repository that are not present.\n")
@@ -53,22 +85,22 @@ class Shutter(MyLog):
     def __init__(self, log = None, config = None):
         super(Shutter, self).__init__()
         self.lock = threading.Lock()
-        if log != None:
+        if log is not None:
             self.log = log
-        if config != None:
+        if config is not None:
             self.config = config
 
-        if self.config.TXGPIO != None:
+        if self.config.TXGPIO is not None:
            self.TXGPIO=self.config.TXGPIO # 433.42 MHz emitter
         else:
            self.TXGPIO=4 # 433.42 MHz emitter on GPIO 4
         self.frame = bytearray(7)
         self.callback = []
         self.shutterStateList = {}
-        self.sutterStateLock = threading.Lock()
+        self.shutterStateLock = threading.Lock()
 
     def getShutterState(self, shutterId, initialPosition = None):
-        with self.sutterStateLock:
+        with self.shutterStateLock:
             if shutterId not in self.shutterStateList:
                 self.shutterStateList[shutterId] = self.ShutterState(initialPosition)
             return self.shutterStateList[shutterId]
@@ -79,7 +111,7 @@ class Shutter(MyLog):
 
     def setPosition(self, shutterId, newPosition):
         state = self.getShutterState(shutterId)
-        with self.sutterStateLock:
+        with self.shutterStateLock:
             state.position = newPosition
         for function in self.callback:
             function(shutterId, newPosition)
@@ -189,7 +221,7 @@ class Shutter(MyLog):
 
         if fallback == True: # Let's assume it will end on the intermediate position ! If it exists !
             intermediatePosition = self.config.Shutters[shutterId]['intermediatePosition']
-            if (intermediatePosition == None) or (intermediatePosition == state.position):
+            if intermediatePosition is None or intermediatePosition == state.position:
                 self.LogInfo("["+shutterId+"] Stay stationary.")
                 newPosition = state.position
             else:
@@ -230,7 +262,7 @@ class Shutter(MyLog):
        self.LogDebug("sendCommand: Waiting for Lock")
        self.lock.acquire()
        try:
-           self.LogDebug("sendCommand: Lock aquired")
+           self.LogDebug("sendCommand: Lock acquired")
            checksum = 0
 
            teleco = int(shutterId, 16)
@@ -295,7 +327,7 @@ class Shutter(MyLog):
            wf.append(pigpio.pulse(1<<self.TXGPIO, 0, 4550)) # software synchronization
            wf.append(pigpio.pulse(0, 1<<self.TXGPIO,  640))
 
-           for i in range (0, 56): # manchester enconding of payload data
+           for i in range (0, 56): # manchester encoding of payload data
               if ((self.frame[int(i/8)] >> (7 - (i%8))) & 1):
                  wf.append(pigpio.pulse(0, 1<<self.TXGPIO, 640))
                  wf.append(pigpio.pulse(1<<self.TXGPIO, 0, 640))
@@ -312,7 +344,7 @@ class Shutter(MyLog):
                     wf.append(pigpio.pulse(1<<self.TXGPIO, 0, 4550)) # software synchronization
                     wf.append(pigpio.pulse(0, 1<<self.TXGPIO,  640))
 
-                    for i in range (0, 56): # manchester enconding of payload data
+                    for i in range (0, 56): # manchester encoding of payload data
                           if ((self.frame[int(i/8)] >> (7 - (i%8))) & 1):
                              wf.append(pigpio.pulse(0, 1<<self.TXGPIO, 640))
                              wf.append(pigpio.pulse(1<<self.TXGPIO, 0, 640))
@@ -344,16 +376,17 @@ class operateShutters(MyLog):
         self.IsStopping = False
         self.ProgramComplete = False
 
-        if args.ConfigFile == None:
+        if args.ConfigFile is None:
             self.ConfigFile = "/etc/operateShutters.conf"
         else:
             self.ConfigFile = args.ConfigFile
 
         self.console = SetupLogger("shutters_console", log_file = "", stream = True)
 
-        if os.geteuid() != 0:
-            self.LogConsole("You need to have root privileges to run this script.\nPlease try again, this time using 'sudo'.")
-            sys.exit(1)
+        if not WINDOWS:
+            if os.geteuid() != 0:
+                self.LogConsole("You need to have root privileges to run this script.\nPlease try again, this time using 'sudo'.")
+                sys.exit(1)
 
         if not os.path.isfile(self.ConfigFile):
             self.LogConsole("Creating new config file : " + self.ConfigFile)
@@ -373,22 +406,21 @@ class operateShutters(MyLog):
             sys.exit(1)
 
         # log errors in this module to a file
-        self.log = SetupLogger("shutters", self.config.LogLocation + "operateShutters.log")
+        logLocation = self.config.LogLocation
+        if WINDOWS and not os.path.isdir(logLocation):
+            logLocation = "./"
+        self.log = SetupLogger("shutters", logLocation + "operateShutters.log")
         self.config.log = self.log
 
-        if self.IsLoaded():
+        if not WINDOWS and self.IsLoaded():
             self.LogWarn("operateShutters.py is already loaded.")
             sys.exit(1)
 
-        if not self.startPIGPIO():
+        if not WINDOWS and not self.startPIGPIO():
             self.LogConsole("Not able to start PIGPIO")
             sys.exit(1)
 
         self.shutter = Shutter(log = self.log, config = self.config)
-
-        # atexit.register(self.Close)
-        # signal.signal(signal.SIGTERM, self.Close)
-        # signal.signal(signal.SIGINT, self.Close)
 
         self.schedule = Schedule(log = self.log, config = self.config)
         self.scheduler = None
@@ -472,22 +504,22 @@ class operateShutters(MyLog):
        elif ((args.shutterName != "") and (args.program == True)):
              self.shutter.program(self.config.ShuttersByName[args.shutterName])
        elif ((args.shutterName != "") and (args.demo == True)):
-             self.LogInfo ("lowering shutter for 7 seconds")
-             self.shutter.lowerPartial(self.config.ShuttersByName[args.shutterName], 7)
+             self.LogInfo ("lowering shutter")
+             self.shutter.lowerPartial(self.config.ShuttersByName[args.shutterName], 0)
              time.sleep(7)
-             self.LogInfo ("rise shutter for 7 seconds")
-             self.shutter.risePartial(self.config.ShuttersByName[args.shutterName], 7)
+             self.LogInfo ("raising shutter")
+             self.shutter.risePartial(self.config.ShuttersByName[args.shutterName], 100)
        elif ((args.shutterName != "") and (args.duskdawn is not None)):
              self.schedule.addRepeatEventBySunrise([self.config.ShuttersByName[args.shutterName]], 'up', args.duskdawn[1], ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'])
              self.schedule.addRepeatEventBySunset([self.config.ShuttersByName[args.shutterName]], 'down', args.duskdawn[0], ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'])
              self.scheduler = Scheduler(kwargs={'log':self.log, 'schedule':self.schedule, 'shutter': self.shutter, 'config': self.config})
-             self.scheduler.setDaemon(True)
+             self.scheduler.daemon = True
              self.scheduler.start()
              if (args.echo == True):
-                 self.alexa.setDaemon(True)
+                 self.alexa.daemon = True
                  self.alexa.start()
              if (args.mqtt == True):
-                 self.mqtt.setDaemon(True)
+                 self.mqtt.daemon = True
                  self.mqtt.start()
              self.scheduler.join()
        elif ((args.shutterName != "") and (args.press)):
@@ -506,15 +538,15 @@ class operateShutters(MyLog):
 
              self.shutter.pressButtons(self.config.ShuttersByName[args.shutterName], buttons, args.long)
        elif (args.auto == True):
-             self.schedule.loadScheudleFromConfig()
+             self.schedule.loadScheduleFromConfig()
              self.scheduler = Scheduler(kwargs={'log':self.log, 'schedule':self.schedule, 'shutter': self.shutter, 'config': self.config})
-             self.scheduler.setDaemon(True)
+             self.scheduler.daemon = True
              self.scheduler.start()
              if (args.echo == True):
-                 self.alexa.setDaemon(True)
+                 self.alexa.daemon = True
                  self.alexa.start()
              if (args.mqtt == True):
-                 self.mqtt.setDaemon(True)
+                 self.mqtt.daemon = True
                  self.mqtt.start()
              self.webServer = FlaskAppWrapper(name='WebServer', static_url_path=os.path.dirname(os.path.realpath(__file__))+'/html', log = self.log, shutter = self.shutter, schedule = self.schedule, config = self.config)
              self.webServer.run()
@@ -522,10 +554,10 @@ class operateShutters(MyLog):
           parser.print_help()
 
        if (args.echo == True):
-           self.alexa.setDaemon(True)
+           self.alexa.daemon = True
            self.alexa.start()
        if (args.mqtt == True):
-           self.mqtt.setDaemon(True)
+           self.mqtt.daemon = True
            self.mqtt.start()
 
        if (args.echo == True):
@@ -548,22 +580,22 @@ class operateShutters(MyLog):
 
         try:
             self.ProgramComplete = True
-            if (not self.scheduler == None):
+            if self.scheduler is not None:
                 self.LogError("Stopping Scheduler. This can take up to 1 second...")
                 self.scheduler.shutdown_flag.set()
                 self.scheduler.join()
                 self.LogError("Scheduler stopped. Now exiting.")
-            if (not self.alexa == None):
+            if self.alexa is not None:
                 self.LogError("Stopping Alexa Listener. This can take up to 1 second...")
                 self.alexa.shutdown_flag.set()
                 self.alexa.join()
                 self.LogError("Alexa Listener stopped. Now exiting.")
-            if (not self.mqtt == None):
+            if self.mqtt is not None:
                 self.LogError("Stopping MQTT Listener. This can take up to 1 second...")
                 self.mqtt.shutdown_flag.set()
                 self.mqtt.join()
                 self.LogError("MQTT Listener stopped. Now exiting.")
-            if (not self.webServer == None):
+            if self.webServer is not None:
                 self.LogError("Stopping WebServer. This can take up to 1 second...")
                 self.webServer.shutdown_server()
                 self.LogError("WebServer stopped. Now exiting.")

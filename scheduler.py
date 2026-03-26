@@ -1,21 +1,18 @@
 #!/usr/bin/python3
 
 import sys, re, argparse
-import fcntl
 import os
-import re
 import locale
 import time
 import datetime
 import ephem
-import pigpio
 import socket
 import signal, atexit, subprocess, traceback
 import logging, logging.handlers
 import threading
 
 try:
-    from mylog import MyLog
+    from config import MyLog
 except Exception as e1:
     print("\n\nThis program requires the modules located from the same github repository that are not present.\n")
     print("Error: " + str(e1))
@@ -38,12 +35,12 @@ class Event:
         self.active = active
 
         if repeatType not in ('once', 'weekday'):
-            raise ValueError("%s is not a valid value for REPEATTYPE." % timeType)
+            raise ValueError("%s is not a valid value for REPEATTYPE." % repeatType)
         self.repeatType = repeatType
                 
-        if (repeatValue == 'weekday') and not all(elem in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] for elem in repeatValue):
+        if (repeatType == 'weekday') and not all(elem in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] for elem in repeatValue):
             raise ValueError("%s is not a valid value for REPEATVALUE (weekday)." % repeatValue )
-        if (repeatValue == 'once') and not (datetime.datetime.strptime(repeatValue, '%Y/%m/%d')):
+        if (repeatType == 'once') and not (datetime.datetime.strptime(repeatValue, '%Y/%m/%d')):
             raise ValueError("%s is not a valid value for REPEATVALUE (once)." % repeatValue )
         self.repeatValue = repeatValue
         
@@ -53,7 +50,7 @@ class Event:
 
         if (timeType == "clock") and not time.strptime(timeValue, '%H:%M'):
             raise ValueError("%s is not a valid value for TIMEVALUE (clock)." % timeValue )
-        astro_parts = re.split('\+|\-', timeValue)
+        astro_parts = re.split(r'\+|\-', timeValue)
         if (timeType == "astro") and not ((astro_parts[0] in ('sunset', 'sunrise')) and ((len(astro_parts) == 1) or (astro_parts[1] == None or int(astro_parts[1])))):
             raise ValueError("%s is not a valid value for TIMEVALUE (astro)." % timeValue)
         self.timeValue = timeValue
@@ -88,13 +85,13 @@ class Schedule(MyLog):
         self.setUpdateTime()
         
     def addEvent(self, id, evt):
-        if id in self.schedule.items():
+        if id in self.schedule:
             self.LogError("Event ID is not unique: "+ str(id))
             
         self.LogDebug('addEvent: Waiting for Lock')
         self.lock.acquire()
         try:
-            self.LogDebug('addEvent: Lock aquired')
+            self.LogDebug('addEvent: Lock acquired')
             self.schedule[id] = evt
             self.setUpdateTime()
         finally:
@@ -151,10 +148,10 @@ class Schedule(MyLog):
             self.LogError("Failed to add event: "+ str(ex))
             pass
             
-    def loadScheudleFromConfig(self):
+    def loadScheduleFromConfig(self):
         self.LogDebug("Loading Schedule from Config File")
         for id, data in self.config.Schedule.items():
-            self.LogDebug("Loading Scheudle "+str(id))
+            self.LogDebug("Loading Schedule "+str(id))
             if data['repeatType'] == 'weekday':
                repeatValue = data['repeatValue'].split("|")
             else:

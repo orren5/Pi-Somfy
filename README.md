@@ -11,8 +11,8 @@ This project has been developed and tested with a Raspberry Pi B+ and a Raspberr
 Wi-Fi connectivity and Ethernet cable should both work. Note that the hardware has to be reasonably close (i.e. in the same house or in the same aisle of your mansion: just like a physical remote) to the shutters you operate, as the signal strength will otherwise not be sufficient.
 
 As of now, you have to build your own hardware. Here are the steps to do so.
-1. You need the RF Transmitter. If you wish to order it from eBay, this link maybe helpful: <br/>[Order](https://www.ebay.com/sch/sis.html?_nkw=5x+433Mhz+RF+transmitter+and+receiver+kit+Module+Arduino+ARM+WL+MCU+Raspberry).<br/>Note that desoldering a 3 pin component isn't trivial, so ordering more than one may be a good idea in case of a screw up.
-1. You need an oscillator for a 433.42 MHz frequency. The above RF transmitter comes with a common 433.93 MHz one, which will not work with your Somfy shutter. If you wish to order it from eBay, this link maybe helpful: <br/>[Order](https://www.ebay.com/sch/sis.html?_nkw=433.42M+R433+F433+SAW+Resonator+Crystals+TO-39)
+1. You need the RF Transmitter. If you wish to order it from eBay, this link may be helpful: <br/>[Order](https://www.ebay.com/sch/sis.html?_nkw=5x+433Mhz+RF+transmitter+and+receiver+kit+Module+Arduino+ARM+WL+MCU+Raspberry).<br/>Note that desoldering a 3 pin component isn't trivial, so ordering more than one may be a good idea in case of a screw up.
+1. You need an oscillator for a 433.42 MHz frequency. The above RF transmitter comes with a common 433.93 MHz one, which will not work with your Somfy shutter. If you wish to order it from eBay, this link may be helpful: <br/>[Order](https://www.ebay.com/sch/sis.html?_nkw=433.42M+R433+F433+SAW+Resonator+Crystals+TO-39)
 1. You will need cables to connect the transmitter to the Raspberry Pi. Any cable will do obviously, but I found these quite helpful. <br/>[Order](https://www.ebay.com/itm/40Pin-Multicolored-Dupont-Wire-Kits-Breadboard-Female-Jumper-Ribbon-Cable/113310899442)
 1. OPTIONAL: If you intend to place your Raspberry Pi further than about 10 ft from your receiver (aka your shutter or awning), you may need an antenna. Literally any 17 cm solid core copper wire will do the job. But if you prefer to order a fancy full one, this one will come handy <br/>[Order](https://www.ebay.com/itm/10pcs-433MHz-antenna-Helical-antenna-Remote-Control-for-Arduino-Raspberry-pi/372691762881?hash=item56c628fec1:g:kf0AAOxyBPZTgvGe)
 
@@ -46,7 +46,7 @@ If you are not familiar with remote login commands for Linux/Unix, two useful co
 
 The Raspberry Pi organization has documentation on installing an operating system on your Raspberry Pi. It is located [here](https://www.raspberrypi.org/documentation/installation/installing-images/README.md).
 
-One the Pi has its basic setup (an operating system and an internet connection) working, ssh into your Raspberry Pi and you should find that you are in the directory /home/pi. Note: if you prefer not to use a headless system, you can also open a terminal windows directly on the Pi.
+Once the Pi has its basic setup (an operating system and an internet connection) working, ssh into your Raspberry Pi and you should find that you are in the directory /home/pi. Note: if you prefer not to use a headless system, you can also open a terminal windows directly on the Pi.
 
 The next step is to download the Pi-Somfy project files to your Raspberry Pi. The easiest way to do this is to use the "git" program. Most Raspberry Pi distributions include the git program (except Debian Lite).
 
@@ -66,19 +66,11 @@ git clone https://github.com/Nickduino/Pi-Somfy.git
 
 The above command will make a directory in /home/pi named Pi-Somfy and put the project files in this directory.
 
-Next, we need to install Python Libraries. Before doing so, you have to decide whether you want to run Pi-Somfy in Python 2 or Python 3. The library supports both, but Python 3 is suggested. So, to proceed in Python 3, you need to ensure pip3 is installed: 
-
-If the program 'pip3' is not installed on your system, type:
+Next, we need to install Python Libraries. Pi-Somfy requires Python 3. Ensure pip3 is installed:
 
 ```sh
 sudo apt-get update
 sudo apt-get install python3-pip
-```
-    
-If you decided to use Python 2, the last command will read instead:
-
-```sh
-sudo apt-get install python-pip
 ```
 
 Next, we need to install the PIGPIO libraries, to do so, type:
@@ -92,14 +84,8 @@ Next install the required Python Libraries:
 ```sh
 sudo pip3 install -r requirements.txt
 ```
-   
-If you decided to use Python 2, the last command will read instead:
 
-```sh
-sudo pip install -r requirements.txt
-```
-
-Next, let's test if it all works. Start <operateShutters.py> by typing:
+Next, let's test if it all works. Start `operateShutters.py` by typing:
 
 ```sh
 sudo python3 /home/pi/Pi-Somfy/operateShutters.py
@@ -109,7 +95,7 @@ You should see the help text explaining the [Command Line Interface](documentati
 
 ## 4 Usage
 
-Note that the config file won't exists the first time you run the application. In that case, a new config file will be created based on the name you specified (e.g. /home/pi/Pi-Somfy/operateShutters.conf). Once it has been created, you can modify it to change your need (SSL or not, which port is used, etc.), it will not be erased with an update. If you messed up something, just delete it and relaunch operateShutters.py, a new vanilla copy will be generated.
+Note that the config file won't exist the first time you run the application. In that case, a new config file will be created based on the name you specified (e.g. /home/pi/Pi-Somfy/operateShutters.conf). Once it has been created, you can modify it to change your need (SSL or not, which port is used, etc.), it will not be erased with an update. If you messed up something, just delete it and relaunch operateShutters.py, a new vanilla copy will be generated.
 
 You have 6 ways to operate. The recommended operation mode is mode 5. But the other 5 modes are explained here for completeness:
 
@@ -127,9 +113,9 @@ You have 6 ways to operate. The recommended operation mode is mode 5. But the ot
     -press BTN [BTN...]                     Simulate a chord press of a the specified remote buttons
                                             ('up', 'down', 'stop'/'my', and 'program')
     -long                                   When used with the -press option, simulates a long press
-    -demo                                   lower the shutter, stop after 7 second then raise the shutter
+    -demo                                   Lower the shutter, wait, then raise it again
     -duskdawn DUSKDAWN DUSKDAWN, -dd DUSKDAWN DUSKDAWN
-                                            Automatically lower the shutter at sunset and rise the
+                                            Automatically lower the shutter at sunset and raise the
                                             shutter at sunrise, provide the evening delay and
                                             morning delay in minutes each
     -auto, -a                               Run schedule based on config. Also will start up the web-server 
@@ -147,7 +133,7 @@ sudo /home/pi/Pi-Somfy/operateShutters.py corridor -c /home/pi/Pi-Somfy/operateS
 sudo /home/pi/Pi-Somfy/operateShutters.py corridor -c /home/pi/Pi-Somfy/operateShutters.conf -dd 0 60
 ``` 
 
-2. Manually start Web interface only<br/>You can start the web-interface by typing:<br/>Once started, you can access the web interface at http://IPaddressOfYouPi:80. From there you can further modify your settings.   
+2. Manually start Web interface only<br/>You can start the web-interface by typing:<br/>Once started, you can access the web interface at http://IPaddressOfYourPi:80. From there you can further modify your settings.   
 ```sh
 sudo python3 /home/pi/Pi-Somfy/operateShutters.py -c /home/pi/Pi-Somfy/operateShutters.conf -a 
 ```    
@@ -179,19 +165,14 @@ If you want to restart the service simply type:
 ```sh
 sudo systemctl restart shutters.service
 ```  
-Note, currently the service expects python3 for starting up. 
-If you went the python 2.7 path change the following line in shutters.service file before your installation
+Note, currently the service expects python3 for starting up.
 ```
 ExecStart=sudo /usr/bin/python3 /home/pi/Pi-Somfy/operateShutters.py -c /home/pi/Pi-Somfy/operateShutters.conf -a -e -m
 ```
-to
-```
-ExecStart=sudo /usr/bin/python2.7 /home/pi/Pi-Somfy/operateShutters.py -c /home/pi/Pi-Somfy/operateShutters.conf -a -e -m
-```
 
-6. Finally, the recommended way to operate it is using a systemd service on boot time. You can do so by typing:
+6. Alternatively, you can use cron to run the program at boot time. You can do so by typing:
 ```sh
-sudo crontab –e 
+sudo crontab -e 
 ```
 Note, that "crontab -e" will just open a console-based text editor that you can edit the crontab script. The first time you run "crontab -e" you will be prompted to choose the editor. I recommend nano. From the crontab window, add the following to the bottom of the crontab script
 
@@ -207,12 +188,12 @@ The program is not known to crash. Hence restarting it every hour is not really 
 To stop the program from running in the background, type:
 
 ```sh
-sudo pkill –f operateShutters.py
+sudo pkill -f operateShutters.py
 ```
 
 ## 5 Web GUI
 
-Using your web-browser, navigate to: http://IPaddressOfYouPi:80
+Using your web-browser, navigate to: http://IPaddressOfYourPi:80
 
 First time you use the Web GUI, it's important that you follow these 3 steps:
 
@@ -221,20 +202,22 @@ First time you use the Web GUI, it's important that you follow these 3 steps:
 1. You will need to set up your shutters and program your remote control. To do so, select the second menu item "Add/Remove Shutters". <br/>![Screenshot](documentation/p1.png)<br/>
 Click the "Add" button, select the name for your shutter (this is also the name that the Amazon Alexa app will use later) and click on the "save" icon. Then follow the on-screen instructions for programming your shutter. For installing shutters from the factory default configuration, use the Configure button.
 
-1. Next, make sure your shutters work. The easiest way to verify is to use the "Manual Operations" menu. <br/>![Screenshot](documentation/p2.png)<br/> You can rise and lower your shutters by clicking on the relevant icons.
+1. Next, make sure your shutters work. The easiest way to verify is to use the "Manual Operations" menu. <br/>![Screenshot](documentation/p2.png)<br/> You can raise and lower your shutters by clicking on the relevant icons.
 
 1. Finally, it's time to program your shutters schedule. To do so, use the "Scheduled Operations" menu. <br/>![Screenshot](documentation/p3.png)<br/>
 
 
 ## 6 Alexa Integration
 
-Before you can use the Amazon Alexa integration, you need to make sure you set up all shutters, by using "Add/Remove Shutters" in the Web GUI. **Amazon Alexa does not automatically discover new or amended shutters you have added**. 
+Before you can use the Amazon Alexa integration, you need to make sure you set up all shutters, by using "Add/Remove Shutters" in the Web GUI.
+
+New or removed shutters are automatically picked up by the Alexa integration within a few seconds — no restart is required. However, you will still need to ask Alexa to discover devices before she can control them.
 
 So once all your shutters are set up and testing on the Web GUI, go to your Echo speaker and ask Alexa to discover your device. Say, "Discover my devices," or select Add Device in the Devices section of the Alexa app.
 
 Once Alexa has discovered your shutters, you can use the Alexa app to complete the setup. 
 
-To lower your shutter via the Echo speaker, say "Alexa, turn on {SHUTTERNAME}". And to rise the shutter again, say “Alexa, turn off {SHUTTERNAME}".
+To lower your shutter via the Echo speaker, say "Alexa, turn on {SHUTTERNAME}". And to raise the shutter again, say “Alexa, turn off {SHUTTERNAME}".
 
 If you prefer to state the likes of "Alexa, OPEN the shutter" or "Alexa, CLOSE the shutter" (rather than using the words ON or OFF), you can set up a Routine with Alexa.
 
@@ -250,11 +233,11 @@ MQTT_Port = 1883
 MQTT_User = xxxxxxx
 MQTT_Password = xxxxxxx
 ```
-and make sure they match the setup of you MQTT Broker. If you are using Home Assistant, you can conveniently use the "Mosquitto broker" add-on inside Home Assistant. For more information refer to the relevant [Documentation](https://github.com/home-assistant/hassio-addons/tree/master/mosquitto)
+and make sure they match the setup of your MQTT Broker. If you are using Home Assistant, you can conveniently use the "Mosquitto broker" add-on inside Home Assistant. For more information refer to the relevant [Documentation](https://github.com/home-assistant/hassio-addons/tree/master/mosquitto)
 
 If you choose not to use the Home Assistant add-in, you can download the [Mosquitto Broker](https://mosquitto.org/) and refer to the [Broker configuration](https://mosquitto.org/man/mosquitto-8.html)
 
-Second start `operateShutter.py` with the "-m" option. This should look similar to this:
+Second, start `operateShutters.py` with the "-m" option. This should look similar to this:
 
 ```sh
 operateShutters.py -c /home/pi/Pi-Somfy/operateShutters.conf -a -m
@@ -283,7 +266,7 @@ Note that both Pi-Somfy & Home Assistant need to be restarted before this will w
 
 ### b.) Don't use Home Assistants MQTT Discovery functionality.
 
-If so, no further changes are required to `operateShutters.conf`. However you will have to add the following lines to `configuration.yaml` in Home Assistant for ever shutter you have (replace 0x2670xx with the shutters actual RTS_Address, which you can get from your `operateShutters.conf` file): 
+If so, no further changes are required to `operateShutters.conf`. However you will have to add the following lines to `configuration.yaml` in Home Assistant for every shutter you have (replace 0x2670xx with the shutters actual RTS_Address, which you can get from your `operateShutters.conf` file): 
 
 ```
 cover:
@@ -306,20 +289,38 @@ Finally, in case of any difficulties with this integration, 2 more useful comman
 If you want to see what messages are passed on the MQTT Broker, you can use the following to listen to all messages (assuming you set up mosquitto with a username and password):
 
 ```
-mosquitto_sub -h 192.168.x.x -p 1883 -u [username]-P [password] -t '#' -v
+mosquitto_sub -h 192.168.x.x -p 1883 -u [username] -P [password] -t '#' -v
 ```
 
 ### b.) Send messages to the MQTT Broker, for Pi-Somfy to pick up
 If you want to post a message to the MQTT Broker for your Pi-Somfy to pick up, you can use following to send messages (assuming you set up mosquitto with a username and password):
 
 ```
-mosquitto_pub -h 192.168.x.x -p 1883 -u [username]-P [password] -t 'somfy/0x2670xx/level/cmd' -m '0'
-mosquitto_pub -h 192.168.x.x -p 1883 -u [username]-P [password] -t 'somfy/0x2670xx/level/cmd' -m '100'
+mosquitto_pub -h 192.168.x.x -p 1883 -u [username] -P [password] -t 'somfy/0x2670xx/level/cmd' -m '0'
+mosquitto_pub -h 192.168.x.x -p 1883 -u [username] -P [password] -t 'somfy/0x2670xx/level/cmd' -m '100'
 ```
 
-Those 2 command will lower and rise your shutters.
+Those 2 commands will lower and raise your shutters.
 
-## 8 Credits
+## 8 Modernization (2025–2026)
+
+The project has been updated to use current software libraries and fix a number of issues:
+
+### Web Interface
+- **Modernized design**: The web interface has been fully updated for a modern look and feel, with a mobile-friendly layout that works well on phones and tablets.
+- **Cleaner icons**: All button icons are now crisp vector graphics instead of the old bitmap images.
+- **Schedule page fixes**: Fixed several visual glitches — toggle labels, clock picker popup, and dropdown menus now display correctly in all situations. Also fixed a bug where deleting a schedule and then adding a new one could fail.
+
+### Backend
+- **Alexa: no restart needed**: When you add or remove a shutter via the web interface, the Alexa integration picks it up automatically — you no longer need to restart the service.
+- **Alexa: more reliable discovery**: Alexa should now discover all your shutters more reliably. Discovery responses are sent multiple times to avoid missed devices.
+- **Home Assistant (MQTT)**: Updated to the latest Home Assistant MQTT discovery format. Also now works with both older and newer versions of the MQTT library.
+- **Config file safety**: The configuration file is now written more carefully to avoid corruption if the system loses power or crashes mid-write.
+- **Bug fixes**: Fixed several bugs in the scheduler (events not firing correctly in certain conditions), the configuration reader (occasional wrong error messages), and shutter control (demo mode not working properly).
+- **Code cleanup**: Consolidated 9 Python files into 6, removed unused code, and updated deprecated function calls for compatibility with current versions of Python.
+- **Windows**: The application can now run on Windows for development and testing purposes (Alexa and web interface work; GPIO obviously requires a Raspberry Pi).
+
+## 9 Credits
 This Library was ported from [Arduino sketch](https://github.com/Nickduino/Somfy_Remote) onto the Pi by @Nickduino to open and close his blinds automatically. 
 
 If you want to learn more about the Somfy RTS protocol, check out [Pushtack](https://pushstack.wordpress.com/somfy-rts-protocol/). 
@@ -330,7 +331,7 @@ The following fixes were contributed by the community and incorporated into this
 - **Shutter ID case-mangling fix** — Based on fix by @gbsallery ([PR #156](https://github.com/Nickduino/Pi-Somfy/pull/156)) and analysis by @malys ([PR #159](https://github.com/Nickduino/Pi-Somfy/pull/159)). Shutter IDs containing hex letters (a-f) are now consistently uppercased when writing rolling codes, preventing duplicate config entries.
 
 
-## 9 License
+## 10 License
 ![Image of the license](https://i.creativecommons.org/l/by-nc-sa/4.0/88x31.png)
 
 [Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/)

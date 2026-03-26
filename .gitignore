@@ -1,2 +1,9 @@
 /.venv
 /__pycache__
+
+# User config (contains GPS coordinates, shutter names, MQTT credentials)
+operateShutters.conf
+
+# Log files (contain personal data and occupancy patterns)
+*.log
+*.log.*
