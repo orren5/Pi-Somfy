@@ -63,7 +63,7 @@ class DiscoveryMsg:
             "command_topic": TOPIC_PREFIX + "/" + shutter_id + "/command",
             "set_position_topic": TOPIC_PREFIX + "/" + shutter_id + "/set_position",
 
-            # State topics (Pi-Somfy -> HA)
+            # Position topic (Pi-Somfy -> HA)
             "position_topic": TOPIC_PREFIX + "/" + shutter_id + "/position",
             "state_topic": TOPIC_PREFIX + "/" + shutter_id + "/state",
 
@@ -290,12 +290,11 @@ class MQTT(threading.Thread, MyLog):
         self.sendMQTT(TOPIC_PREFIX + "/" + shutter_id + "/position", str(level))
 
         if level >= 100:
-            state = "open"
+            self._publish_state(shutter_id, "open")
         elif level <= 0:
-            state = "closed"
+            self._publish_state(shutter_id, "closed")
         else:
-            state = "stopped"
-        self._publish_state(shutter_id, state)
+            self._publish_state(shutter_id, "stopped")
 
     def run(self):
         self.connected_flag = False
@@ -327,31 +326,36 @@ class MQTT(threading.Thread, MyLog):
             try:
                 self.LogInfo("Connecting to MQTT broker at " + self.config.MQTT_Server + ":" + str(self.config.MQTT_Port))
                 self.t.connect(self.config.MQTT_Server, self.config.MQTT_Port)
-                time.sleep(10)
                 break
             except Exception as e:
                 error += 1
                 self.LogInfo("MQTT connect attempt " + str(error) + " failed: " + str(e))
+                time.sleep(10)
 
-        # Main loop
-        error = 0
+        # Start the paho-mqtt background network thread.
+        # This processes incoming messages and sends outgoing publishes
+        # immediately from any thread — critical so that state updates
+        # published from waitAndSetFinalPosition threads are delivered
+        # without waiting for a manual loop() call.
+        self.t.loop_start()
+
+        # Keep this thread alive until shutdown is requested;
+        # reconnection is handled automatically by paho's loop thread.
         while not self.shutdown_flag.is_set():
             try:
-                # Timeout must be smaller than MQTT keep_alive (60s default)
-                self.t.loop(timeout=30)
                 if not self.connected_flag:
                     self.LogInfo("Reconnecting to MQTT broker")
-                    self.t.connect(self.config.MQTT_Server, self.config.MQTT_Port)
-                    time.sleep(10)
+                    self.t.reconnect()
+                time.sleep(5)
             except Exception as e:
-                error += 1
-                self.LogInfo("MQTT loop exception " + str(error) + ": " + str(e))
-                time.sleep(0.5)
+                self.LogInfo("MQTT reconnect failed: " + str(e))
+                time.sleep(10)
 
-        # Clean shutdown — explicitly mark offline before disconnecting
+        # Clean shutdown
         try:
             self.t.publish(AVAILABILITY_TOPIC, "offline", retain=True)
             time.sleep(1)
+            self.t.loop_stop()
             self.t.disconnect()
         except Exception:
             pass

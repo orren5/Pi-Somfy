@@ -1,0 +1,38 @@
+name: "Pi-Somfy"
+description: "Operate Somfy RTS shutters via 433.42 MHz RF on Raspberry Pi GPIO"
+version: "3.0.0"
+slug: "pi_somfy"
+url: "https://github.com/Nickduino/Pi-Somfy"
+arch:
+  - aarch64
+  - armv7
+boot: auto
+startup: application
+init: false
+ingress: true
+ingress_port: 80
+ingress_entry: /
+panel_icon: "mdi:window-shutter"
+panel_title: "Pi-Somfy"
+webui: "http://[HOST]:[PORT:80]/"
+gpio: true
+privileged:
+  - SYS_RAWIO
+devices:
+  - /dev/mem
+  - /dev/gpiochip0
+  - /dev/gpiochip4
+map:
+  - type: data
+    read_only: false
+ports:
+  80/tcp: 9909
+ports_description:
+  80/tcp: "Pi-Somfy Web UI"
+watchdog: "http://[HOST]:[PORT:80]/cmd/getConfig"
+options:
+  gpio_pin: 4
+schema:
+  gpio_pin: "int(0,27)"
+discovery:
+  - pi_somfy
