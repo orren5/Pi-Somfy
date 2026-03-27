@@ -1,0 +1,25 @@
+program_shutter:
+  fields:
+    shutter_id:
+      required: true
+      selector:
+        text:
+
+press_buttons:
+  fields:
+    shutter_id:
+      required: true
+      selector:
+        text:
+    buttons:
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 15
+          mode: box
+    long_press:
+      required: false
+      default: false
+      selector:
+        boolean:

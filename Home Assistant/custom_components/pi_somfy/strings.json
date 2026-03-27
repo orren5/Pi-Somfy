@@ -1,0 +1,81 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to Pi-Somfy",
+        "description": "Enter the connection details for your Pi-Somfy instance.",
+        "data": {
+          "host": "Host",
+          "port": "Port",
+          "password": "Password",
+          "scan_interval": "Polling interval (seconds)"
+        },
+        "data_description": {
+          "host": "IP address or hostname of the Pi-Somfy device.",
+          "port": "HTTP port (default 80).",
+          "password": "Leave empty if no password is configured.",
+          "scan_interval": "How often to poll for position updates (5-300 seconds)."
+        }
+      },
+      "hassio_confirm": {
+        "title": "Pi-Somfy Add-on Discovered",
+        "description": "A Pi-Somfy add-on was found at {host}:{port}. Do you want to set it up?"
+      },
+      "reconfigure": {
+        "title": "Reconfigure Pi-Somfy",
+        "description": "Update the connection details for your Pi-Somfy instance.",
+        "data": {
+          "host": "Host",
+          "port": "Port",
+          "password": "Password",
+          "scan_interval": "Polling interval (seconds)"
+        },
+        "data_description": {
+          "host": "IP address or hostname of the Pi-Somfy device.",
+          "port": "HTTP port (default 80).",
+          "password": "Leave empty if no password is configured.",
+          "scan_interval": "How often to poll for position updates (5-300 seconds)."
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to Pi-Somfy. Please check the host and port.",
+      "invalid_auth": "Invalid password.",
+      "unknown": "An unexpected error occurred."
+    },
+    "abort": {
+      "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
+      "reconfigure_successful": "[%key:common::config_flow::abort::reconfigure_successful%]"
+    }
+  },
+  "services": {
+    "program_shutter": {
+      "name": "Program shutter",
+      "description": "Send a programming signal to a shutter. The shutter must be in programming mode.",
+      "fields": {
+        "shutter_id": {
+          "name": "Shutter ID",
+          "description": "The ID of the shutter to program (e.g. 0x123abc)."
+        }
+      }
+    },
+    "press_buttons": {
+      "name": "Press buttons",
+      "description": "Send a raw button press to a shutter.",
+      "fields": {
+        "shutter_id": {
+          "name": "Shutter ID",
+          "description": "The ID of the shutter (e.g. 0x123abc)."
+        },
+        "buttons": {
+          "name": "Buttons",
+          "description": "Bitmask of buttons to press (2=up, 1=stop, 4=down, 8=prog)."
+        },
+        "long_press": {
+          "name": "Long press",
+          "description": "Whether to perform a long press."
+        }
+      }
+    }
+  }
+}

@@ -221,7 +221,51 @@ To lower your shutter via the Echo speaker, say "Alexa, turn on {SHUTTERNAME}". 
 
 If you prefer to state the likes of "Alexa, OPEN the shutter" or "Alexa, CLOSE the shutter" (rather than using the words ON or OFF), you can set up a Routine with Alexa.
 
-## 7 MQTT Integration (e.g. for Home Assistant)
+## 7 Home Assistant Integration (Recommended)
+
+Pi-Somfy can integrate directly with [Home Assistant](https://www.home-assistant.io/) using a **custom component** and an optional **Supervisor add-on**. This is the recommended approach — it communicates directly with the Pi-Somfy web API, so **no MQTT broker is needed**.
+
+### Which do you need?
+
+| Your Setup | What to install |
+|---|---|
+| RF transmitter attached to a **separate Pi** on the network | Custom Component only |
+| RF transmitter attached to the **same Pi running Home Assistant** | Custom Component **and** Add-on |
+
+- The **Custom Component** adds Pi-Somfy as a native HA integration with cover entities, position control, and automatic discovery.
+- The **Add-on** runs the Pi-Somfy backend (web server + GPIO control) as a Supervisor add-on, so you don't need a separate Pi.
+
+### Installing the Custom Component
+
+#### Option A: HACS (recommended)
+
+1. In Home Assistant, go to **HACS → Integrations**.
+2. Click the three-dot menu (top right) and select **Custom repositories**.
+3. Add `https://github.com/Nickduino/Pi-Somfy` with category **Integration** and click **Add**.
+4. Search for "Pi-Somfy" in HACS, click **Download**, and restart Home Assistant.
+5. Go to **Settings → Devices & Services → Add Integration**, search for "Pi-Somfy", and enter the IP address and port of your Pi-Somfy instance (default port: 80).
+
+#### Option B: Manual install
+
+1. Copy the `Home Assistant/custom_components/pi_somfy` folder into your Home Assistant `config/custom_components/` directory.
+2. Restart Home Assistant.
+3. Go to **Settings → Devices & Services → Add Integration**, search for "Pi-Somfy", and enter the IP address and port of your Pi-Somfy instance (default port: 80).
+
+### Installing the Add-on
+
+1. Copy the `Home Assistant/addon/pi_somfy` folder to your Home Assistant `addons/pi_somfy` directory.
+2. Go to **Settings → Add-ons → Add-on Store** and click the refresh button.
+3. Find "Pi-Somfy" under "Local add-ons" and install it.
+4. Configure the GPIO pin in the add-on settings (default: GPIO 4).
+5. Start the add-on, then install the Custom Component (above) pointing to `localhost` or `homeassistant.local`.
+
+### Raspberry Pi 5 Support (Experimental)
+
+Pi 5 uses a different GPIO chip (RP1) which is incompatible with the pigpio library used on older Pis. Pi-Somfy includes **experimental** support for Pi 5 using the lgpio library, with automatic hardware detection. However, **we have not been able to fully test this ourselves**. If you are running on a Pi 5 and can help validate, your feedback would be greatly appreciated — please open an issue on GitHub.
+
+## 8 MQTT Integration
+
+> **Note:** If you are using Home Assistant, the custom component in Section 7 communicates directly with the Pi-Somfy web API and does not require an MQTT broker. The MQTT integration is still fully supported and works well, especially if you already have an MQTT broker or want to integrate with other home automation systems.
 
 While the MQTT integration was written specifically for [Home Assistant](https://www.home-assistant.io/), nothing is stopping the use of this integration for other purpose. But more on this later
 
@@ -302,9 +346,24 @@ mosquitto_pub -h 192.168.x.x -p 1883 -u [username] -P [password] -t 'somfy/0x267
 
 Those 2 commands will lower and raise your shutters.
 
-## 8 Modernization (2025–2026)
+## 9 Modernization (2025–2026)
 
-The project has been updated to use current software libraries and fix a number of issues:
+The project has been updated to use current software libraries and fix a number of issues.
+
+### Upgrading from a previous version
+
+If you already have Pi-Somfy installed, follow these steps to upgrade:
+
+```sh
+cd /home/pi/Pi-Somfy
+git pull
+sudo pip3 install -r requirements.txt
+sudo systemctl restart shutters.service
+```
+
+Note: if you are not using MQTT (`-m` flag), `paho-mqtt` is no longer required and you can skip installing it. Your existing `operateShutters.conf` will be preserved — the upgrade only replaces code files.
+
+### What changed
 
 ### Web Interface
 - **Modernized design**: The web interface has been fully updated for a modern look and feel, with a mobile-friendly layout that works well on phones and tablets.
@@ -312,6 +371,10 @@ The project has been updated to use current software libraries and fix a number 
 - **Schedule page fixes**: Fixed several visual glitches — toggle labels, clock picker popup, and dropdown menus now display correctly in all situations. Also fixed a bug where deleting a schedule and then adding a new one could fail.
 
 ### Backend
+- **Home Assistant custom component**: New native HA integration with cover entities, position tracking, and automatic shutter discovery.
+- **Home Assistant Supervisor add-on**: Run Pi-Somfy directly on your HA system — no separate Pi required.
+- **Pi 5 support (experimental)**: Automatic detection of Pi 5 hardware with lgpio-based GPIO control as an alternative to pigpio.
+- **paho-mqtt is now optional**: The MQTT library is only imported when you use the `-m` flag, so it no longer needs to be installed if you don't use MQTT.
 - **Alexa: no restart needed**: When you add or remove a shutter via the web interface, the Alexa integration picks it up automatically — you no longer need to restart the service.
 - **Alexa: more reliable discovery**: Alexa should now discover all your shutters more reliably. Discovery responses are sent multiple times to avoid missed devices.
 - **Home Assistant (MQTT)**: Updated to the latest Home Assistant MQTT discovery format. Also now works with both older and newer versions of the MQTT library.
@@ -320,7 +383,7 @@ The project has been updated to use current software libraries and fix a number 
 - **Code cleanup**: Consolidated 9 Python files into 6, removed unused code, and updated deprecated function calls for compatibility with current versions of Python.
 - **Windows**: The application can now run on Windows for development and testing purposes (Alexa and web interface work; GPIO obviously requires a Raspberry Pi).
 
-## 9 Credits
+## 10 Credits
 This Library was ported from [Arduino sketch](https://github.com/Nickduino/Somfy_Remote) onto the Pi by @Nickduino to open and close his blinds automatically. 
 
 If you want to learn more about the Somfy RTS protocol, check out [Pushtack](https://pushstack.wordpress.com/somfy-rts-protocol/). 
@@ -331,7 +394,7 @@ The following fixes were contributed by the community and incorporated into this
 - **Shutter ID case-mangling fix** — Based on fix by @gbsallery ([PR #156](https://github.com/Nickduino/Pi-Somfy/pull/156)) and analysis by @malys ([PR #159](https://github.com/Nickduino/Pi-Somfy/pull/159)). Shutter IDs containing hex letters (a-f) are now consistently uppercased when writing rolling codes, preventing duplicate config entries.
 
 
-## 10 License
+## 11 License
 ![Image of the license](https://i.creativecommons.org/l/by-nc-sa/4.0/88x31.png)
 
 [Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/)

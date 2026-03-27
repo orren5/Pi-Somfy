@@ -58,7 +58,7 @@ class FlaskAppWrapper(MyLog):
     def processCommand(self, command):
         self.LogDebug(request.url + " ( "+ request.method + " ): command=" + command)
         try:
-            if command in ["up", "down", "stop", "program", "press", "getConfig", "addSchedule", "editSchedule", "deleteSchedule", "addShutter", "editShutter", "deleteShutter", "setLocation" ]:
+            if command in ["up", "down", "stop", "program", "press", "getConfig", "getStatus", "setPosition", "addSchedule", "editSchedule", "deleteSchedule", "addShutter", "editShutter", "deleteShutter", "setLocation" ]:
                 self.LogInfo("processing Command \"" + command + "\" with parameters: "+str(request.values))
                 result = getattr(self, command)(request.values)
                 return Response(json.dumps(result), status=200)
@@ -240,6 +240,40 @@ class FlaskAppWrapper(MyLog):
         obj = {'Latitude': self.config.Latitude, 'Longitude': self.config.Longitude, 'Shutters': shutters, 'ShutterDurations': durations, 'Schedule': self.schedule.getScheduleAsDict()}
         self.LogDebug("getConfig called, sending: "+json.dumps(obj))
         return obj
+
+    def getStatus(self, params):
+        if not self.validatePassword():
+            return {'status': 'ERROR'}
+        shutters = {}
+        for k in self.config.Shutters:
+            shutters[k] = {
+                'name': self.config.Shutters[k]['name'],
+                'position': self.shutter.getPosition(k),
+                'durationUp': self.config.Shutters[k]['durationUp'],
+                'durationDown': self.config.Shutters[k]['durationDown']
+            }
+        return {'status': 'OK', 'shutters': shutters}
+
+    def setPosition(self, params):
+        if not self.validatePassword():
+            return {'status': 'ERROR'}
+        shutter = params.get('shutter', 0, type=str)
+        position = params.get('position', 0, type=int)
+        self.LogDebug("setPosition shutter \"" + shutter + "\" to " + str(position))
+        if shutter not in self.config.Shutters:
+            return {'status': 'ERROR', 'message': 'Shutter does not exist'}
+        if position < 0 or position > 100:
+            return {'status': 'ERROR', 'message': 'Position must be between 0 and 100'}
+        current = self.shutter.getPosition(shutter)
+        if position >= 100:
+            self.shutter.rise(shutter)
+        elif position <= 0:
+            self.shutter.lower(shutter)
+        elif position > current:
+            self.shutter.risePartial(shutter, position)
+        elif position < current:
+            self.shutter.lowerPartial(shutter, position)
+        return {'status': 'OK'}
 
     def run(self):
         host = "127.0.0.1" if sys.platform == "win32" else "0.0.0.0"

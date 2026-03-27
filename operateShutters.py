@@ -15,7 +15,7 @@ if WINDOWS:
     _fcntl.lockf = lambda *a, **kw: None
     sys.modules["fcntl"] = _fcntl
 
-    # pigpio requires Raspberry Pi hardware
+    # GPIO stubs for Windows development
     _pigpio = types.ModuleType("pigpio")
     _pigpio.OUTPUT = 0
     class _FakePulse:
@@ -34,14 +34,59 @@ if WINDOWS:
     _pigpio.pi = _FakePi
     sys.modules["pigpio"] = _pigpio
 
+    _lgpio = types.ModuleType("lgpio")
+    _lgpio.TX_WAVE = 1
+    class _FakeLgPulse:
+        def __init__(self, *a, **kw): pass
+    _lgpio.pulse = _FakeLgPulse
+    _lgpio.gpiochip_open = lambda *a: 0
+    _lgpio.gpio_claim_output = lambda *a: 0
+    _lgpio.tx_wave = lambda *a: 0
+    _lgpio.tx_busy = lambda *a: False
+    _lgpio.gpio_free = lambda *a: 0
+    _lgpio.gpiochip_close = lambda *a: 0
+    sys.modules["lgpio"] = _lgpio
+
 import fcntl
 import os
 import locale
 import time
 import datetime
 import ephem
-import pigpio
 import socket
+
+# ── Pi model detection & GPIO library selection ─────────────────────────────
+# Pi 5 uses the RP1 southbridge chip which is incompatible with pigpio.
+# We use lgpio (which works via /dev/gpiochip*) on Pi 5, and pigpio elsewhere.
+# /proc/device-tree/model may not be accessible inside Docker containers;
+# fall back to checking for /dev/gpiochip4 (RP1 chip, Pi 5 only) or the
+# CPU revision code in /proc/cpuinfo.
+IS_PI5 = False
+LGPIO_CHIP = 4   # gpiochip number for lgpio (Pi 5): 4 on older kernels, 0 on newer
+if not WINDOWS:
+    try:
+        with open('/proc/device-tree/model', 'r') as f:
+            _model = f.read()
+        if 'Pi 5' in _model:
+            IS_PI5 = True
+    except (FileNotFoundError, PermissionError):
+        pass
+    if not IS_PI5 and os.path.exists('/dev/gpiochip4'):
+        IS_PI5 = True
+    if not IS_PI5:
+        try:
+            with open('/proc/cpuinfo', 'r') as f:
+                for line in f:
+                    if line.startswith('Revision') and any(rev in line for rev in ['c04170', 'd04170', 'c04171', 'd04171']):
+                        IS_PI5 = True
+                        break
+        except (FileNotFoundError, PermissionError):
+            pass
+
+if IS_PI5:
+    import lgpio
+else:
+    import pigpio
 import signal, atexit, traceback
 import logging, logging.handlers
 import threading
@@ -55,7 +100,6 @@ try:
     from scheduler import Scheduler
     from webserver import FlaskAppWrapper
     from alexa import Alexa
-    from mqtt import MQTT
     from shutil import copyfile
 except Exception as e1:
     print("\n\nThis program requires the modules located from the same github repository that are not present.\n")
@@ -271,14 +315,6 @@ class Shutter(MyLog):
            # print (codecs.encode(shutterId, 'hex_codec'))
            self.config.setCode(shutterId, code+1)
 
-           pi = pigpio.pi() # connect to Pi
-
-           if not pi.connected:
-              exit()
-
-           pi.wave_add_new()
-           pi.set_mode(self.TXGPIO, pigpio.OUTPUT)
-
            self.LogInfo ("Remote  :      " + "0x%0.2X" % teleco + ' (' + self.config.Shutters[shutterId]['name'] + ')')
            self.LogInfo ("Button  :      " + "0x%0.2X" % button)
            self.LogInfo ("Rolling code : " + str(code))
@@ -317,54 +353,113 @@ class Shutter(MyLog):
               outstring = outstring + "0x%0.2X" % octet + ' '
            self.LogInfo (outstring)
 
-           #This is where all the awesomeness is happening. You're telling the daemon what you wanna send
-           wf=[]
-           wf.append(pigpio.pulse(1<<self.TXGPIO, 0, 9415)) # wake up pulse
-           wf.append(pigpio.pulse(0, 1<<self.TXGPIO, 89565)) # silence
-           for i in range(2): # hardware synchronization
-              wf.append(pigpio.pulse(1<<self.TXGPIO, 0, 2560))
-              wf.append(pigpio.pulse(0, 1<<self.TXGPIO, 2560))
-           wf.append(pigpio.pulse(1<<self.TXGPIO, 0, 4550)) # software synchronization
-           wf.append(pigpio.pulse(0, 1<<self.TXGPIO,  640))
+           if IS_PI5:
+               self._sendWave_lgpio(repetition)
+           else:
+               #This is where all the awesomeness is happening. You're telling the daemon what you wanna send
+               pi = pigpio.pi() # connect to Pi
 
-           for i in range (0, 56): # manchester encoding of payload data
-              if ((self.frame[int(i/8)] >> (7 - (i%8))) & 1):
-                 wf.append(pigpio.pulse(0, 1<<self.TXGPIO, 640))
-                 wf.append(pigpio.pulse(1<<self.TXGPIO, 0, 640))
-              else:
-                 wf.append(pigpio.pulse(1<<self.TXGPIO, 0, 640))
-                 wf.append(pigpio.pulse(0, 1<<self.TXGPIO, 640))
+               if not pi.connected:
+                  exit()
 
-           wf.append(pigpio.pulse(0, 1<<self.TXGPIO, 30415)) # interframe gap
+               pi.wave_add_new()
+               pi.set_mode(self.TXGPIO, pigpio.OUTPUT)
 
-           for j in range(1,repetition): # repeating frames
-                    for i in range(7): # hardware synchronization
-                          wf.append(pigpio.pulse(1<<self.TXGPIO, 0, 2560))
-                          wf.append(pigpio.pulse(0, 1<<self.TXGPIO, 2560))
-                    wf.append(pigpio.pulse(1<<self.TXGPIO, 0, 4550)) # software synchronization
-                    wf.append(pigpio.pulse(0, 1<<self.TXGPIO,  640))
+               wf=[]
+               wf.append(pigpio.pulse(1<<self.TXGPIO, 0, 9415)) # wake up pulse
+               wf.append(pigpio.pulse(0, 1<<self.TXGPIO, 89565)) # silence
+               for i in range(2): # hardware synchronization
+                  wf.append(pigpio.pulse(1<<self.TXGPIO, 0, 2560))
+                  wf.append(pigpio.pulse(0, 1<<self.TXGPIO, 2560))
+               wf.append(pigpio.pulse(1<<self.TXGPIO, 0, 4550)) # software synchronization
+               wf.append(pigpio.pulse(0, 1<<self.TXGPIO,  640))
 
-                    for i in range (0, 56): # manchester encoding of payload data
-                          if ((self.frame[int(i/8)] >> (7 - (i%8))) & 1):
-                             wf.append(pigpio.pulse(0, 1<<self.TXGPIO, 640))
-                             wf.append(pigpio.pulse(1<<self.TXGPIO, 0, 640))
-                          else:
-                             wf.append(pigpio.pulse(1<<self.TXGPIO, 0, 640))
-                             wf.append(pigpio.pulse(0, 1<<self.TXGPIO, 640))
+               for i in range (0, 56): # manchester encoding of payload data
+                  if ((self.frame[int(i/8)] >> (7 - (i%8))) & 1):
+                     wf.append(pigpio.pulse(0, 1<<self.TXGPIO, 640))
+                     wf.append(pigpio.pulse(1<<self.TXGPIO, 0, 640))
+                  else:
+                     wf.append(pigpio.pulse(1<<self.TXGPIO, 0, 640))
+                     wf.append(pigpio.pulse(0, 1<<self.TXGPIO, 640))
 
-                    wf.append(pigpio.pulse(0, 1<<self.TXGPIO, 30415)) # interframe gap
+               wf.append(pigpio.pulse(0, 1<<self.TXGPIO, 30415)) # interframe gap
 
-           pi.wave_add_generic(wf)
-           wid = pi.wave_create()
-           pi.wave_send_once(wid)
-           while pi.wave_tx_busy():
-              pass
-           pi.wave_delete(wid)
+               for j in range(1,repetition): # repeating frames
+                        for i in range(7): # hardware synchronization
+                              wf.append(pigpio.pulse(1<<self.TXGPIO, 0, 2560))
+                              wf.append(pigpio.pulse(0, 1<<self.TXGPIO, 2560))
+                        wf.append(pigpio.pulse(1<<self.TXGPIO, 0, 4550)) # software synchronization
+                        wf.append(pigpio.pulse(0, 1<<self.TXGPIO,  640))
 
-           pi.stop()
+                        for i in range (0, 56): # manchester encoding of payload data
+                              if ((self.frame[int(i/8)] >> (7 - (i%8))) & 1):
+                                 wf.append(pigpio.pulse(0, 1<<self.TXGPIO, 640))
+                                 wf.append(pigpio.pulse(1<<self.TXGPIO, 0, 640))
+                              else:
+                                 wf.append(pigpio.pulse(1<<self.TXGPIO, 0, 640))
+                                 wf.append(pigpio.pulse(0, 1<<self.TXGPIO, 640))
+
+                        wf.append(pigpio.pulse(0, 1<<self.TXGPIO, 30415)) # interframe gap
+
+               pi.wave_add_generic(wf)
+               wid = pi.wave_create()
+               pi.wave_send_once(wid)
+               while pi.wave_tx_busy():
+                  pass
+               pi.wave_delete(wid)
+
+               pi.stop()
        finally:
            self.lock.release()
            self.LogDebug("sendCommand: Lock released")
+
+    def _sendWave_lgpio(self, repetition):
+       """Transmit the Somfy RTS frame using lgpio (Pi 5)."""
+       h = lgpio.gpiochip_open(LGPIO_CHIP)
+       lgpio.gpio_claim_output(h, self.TXGPIO)
+
+       pulses = []
+       pulses.append(lgpio.pulse(1, 1, 9415))   # wake up pulse
+       pulses.append(lgpio.pulse(0, 1, 89565))  # silence
+       for i in range(2): # hardware synchronization
+          pulses.append(lgpio.pulse(1, 1, 2560))
+          pulses.append(lgpio.pulse(0, 1, 2560))
+       pulses.append(lgpio.pulse(1, 1, 4550))   # software synchronization
+       pulses.append(lgpio.pulse(0, 1,  640))
+
+       for i in range(0, 56): # manchester encoding of payload data
+          if ((self.frame[int(i/8)] >> (7 - (i%8))) & 1):
+             pulses.append(lgpio.pulse(0, 1, 640))
+             pulses.append(lgpio.pulse(1, 1, 640))
+          else:
+             pulses.append(lgpio.pulse(1, 1, 640))
+             pulses.append(lgpio.pulse(0, 1, 640))
+
+       pulses.append(lgpio.pulse(0, 1, 30415))  # interframe gap
+
+       for j in range(1, repetition): # repeating frames
+                for i in range(7): # hardware synchronization
+                      pulses.append(lgpio.pulse(1, 1, 2560))
+                      pulses.append(lgpio.pulse(0, 1, 2560))
+                pulses.append(lgpio.pulse(1, 1, 4550)) # software synchronization
+                pulses.append(lgpio.pulse(0, 1,  640))
+
+                for i in range(0, 56): # manchester encoding of payload data
+                      if ((self.frame[int(i/8)] >> (7 - (i%8))) & 1):
+                         pulses.append(lgpio.pulse(0, 1, 640))
+                         pulses.append(lgpio.pulse(1, 1, 640))
+                      else:
+                         pulses.append(lgpio.pulse(1, 1, 640))
+                         pulses.append(lgpio.pulse(0, 1, 640))
+
+                pulses.append(lgpio.pulse(0, 1, 30415)) # interframe gap
+
+       lgpio.tx_wave(h, self.TXGPIO, pulses)
+       while lgpio.tx_busy(h, self.TXGPIO, lgpio.TX_WAVE):
+          time.sleep(0.001)
+
+       lgpio.gpio_free(h, self.TXGPIO)
+       lgpio.gpiochip_close(h)
 
 class operateShutters(MyLog):
 
@@ -416,8 +511,8 @@ class operateShutters(MyLog):
             self.LogWarn("operateShutters.py is already loaded.")
             sys.exit(1)
 
-        if not WINDOWS and not self.startPIGPIO():
-            self.LogConsole("Not able to start PIGPIO")
+        if not WINDOWS and not self.startGPIO():
+            self.LogConsole("Not able to start GPIO")
             sys.exit(1)
 
         self.shutter = Shutter(log = self.log, config = self.config)
@@ -430,6 +525,7 @@ class operateShutters(MyLog):
             self.alexa = Alexa(kwargs={'log':self.log, 'shutter': self.shutter, 'config': self.config})
 
         if (args.mqtt == True):
+            from mqtt import MQTT
             self.mqtt = MQTT(kwargs={'log':self.log, 'shutter': self.shutter, 'config': self.config})
 
         self.ProcessCommand(args);
@@ -448,8 +544,25 @@ class operateShutters(MyLog):
         except IOError:
            return True
 
-    #--------------------- operateShutters::startPIGPIO ------------------------------
-    def startPIGPIO(self):
+    #--------------------- operateShutters::startGPIO ---------------------------------
+    def startGPIO(self):
+       if IS_PI5:
+           global LGPIO_CHIP
+           # lgpio accesses /dev/gpiochip* directly — no daemon needed
+           # Try gpiochip4 first (older Pi 5 kernels), then gpiochip0 (newer kernels)
+           for chip in [4, 0]:
+               try:
+                   h = lgpio.gpiochip_open(chip)
+                   lgpio.gpiochip_close(h)
+                   LGPIO_CHIP = chip
+                   self.LogInfo("lgpio: gpiochip{} opened successfully (Pi 5)".format(chip))
+                   return True
+               except Exception as e:
+                   self.LogInfo("lgpio: could not open gpiochip{}: {}".format(chip, e))
+           self.LogError("lgpio: no usable gpiochip found")
+           return False
+
+       # pigpio path for Pi 1/2/3/4
        if sys.version_info[0] < 3:
            import commands
            status, process = commands.getstatusoutput('sudo pidof pigpiod')
